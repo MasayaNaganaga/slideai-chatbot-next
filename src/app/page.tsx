@@ -34,6 +34,18 @@ interface ChatMessage {
   parts: { text: string }[];
 }
 
+// Mock user for development when Supabase is not configured
+const MOCK_USER: User = {
+  id: 'mock-user-id',
+  email: 'test@dexall.co.jp',
+  user_metadata: {
+    full_name: 'テストユーザー',
+  },
+  app_metadata: {},
+  aud: 'authenticated',
+  created_at: new Date().toISOString(),
+} as User;
+
 export default function HomePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -45,6 +57,7 @@ export default function HomePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [streamingContent, setStreamingContent] = useState('');
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -57,33 +70,47 @@ export default function HomePage() {
 
   // Check authentication
   useEffect(() => {
-    const supabase = createClient();
-
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
+    const checkAuth = async () => {
+      // Check if Supabase is configured
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        // Development mode - use mock user
+        console.log('Demo mode: Supabase not configured');
+        setUser(MOCK_USER);
+        setIsDemoMode(true);
+        setIsLoading(false);
         return;
       }
-      setUser(user);
+
+      try {
+        const supabase = createClient();
+        const { data: { user }, error } = await supabase.auth.getUser();
+
+        if (error || !user) {
+          router.push('/login');
+          return;
+        }
+
+        setUser(user);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Auth error:', error);
+        // Fallback to demo mode on error
+        setUser(MOCK_USER);
+        setIsDemoMode(true);
+        setIsLoading(false);
+      }
     };
 
-    checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        router.push('/login');
-      } else if (session?.user) {
-        setUser(session.user);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    checkAuth();
   }, [router]);
 
   // Load conversations
   const loadConversations = useCallback(async () => {
-    if (!user) return;
+    if (!user || isDemoMode) {
+      setIsLoading(false);
+      return;
+    }
     try {
       const convs = await getConversations(user.id);
       setConversations(convs);
@@ -92,7 +119,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, isDemoMode]);
 
   useEffect(() => {
     if (user) {
@@ -102,6 +129,7 @@ export default function HomePage() {
 
   // Load messages
   const loadMessages = async (conversationId: string) => {
+    if (isDemoMode) return;
     try {
       const msgs = await getMessages(conversationId);
       setMessages(
@@ -130,6 +158,14 @@ export default function HomePage() {
   };
 
   const handleDeleteConversation = async (id: string) => {
+    if (isDemoMode) {
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      if (currentConversationId === id) {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+      return;
+    }
     try {
       await deleteConversation(id);
       setConversations((prev) => prev.filter((c) => c.id !== id));
@@ -174,14 +210,27 @@ export default function HomePage() {
 
     try {
       let convId = currentConversationId;
-      if (!convId) {
+
+      // Skip database operations in demo mode
+      if (!isDemoMode && !convId) {
         const newConv = await createConversation(user.id, generateTitle(messageToSend));
         convId = newConv.id;
         setCurrentConversationId(convId);
         setConversations((prev) => [newConv, ...prev]);
+        await saveMessage(convId, 'user', messageToSend);
+      } else if (isDemoMode && !convId) {
+        // Create a mock conversation for demo mode
+        const mockConv: Conversation = {
+          id: `demo-${Date.now()}`,
+          user_id: user.id,
+          title: generateTitle(messageToSend),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        convId = mockConv.id;
+        setCurrentConversationId(convId);
+        setConversations((prev) => [mockConv, ...prev]);
       }
-
-      await saveMessage(convId, 'user', messageToSend);
 
       const history = convertToGeminiHistory(messages);
 
@@ -223,7 +272,9 @@ export default function HomePage() {
         }
       }
 
-      await saveMessage(convId, 'assistant', fullResponse);
+      if (!isDemoMode && convId) {
+        await saveMessage(convId, 'assistant', fullResponse);
+      }
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -235,7 +286,7 @@ export default function HomePage() {
       setMessages((prev) => [...prev, aiMessage]);
       setStreamingContent('');
 
-      if (messages.length === 0) {
+      if (!isDemoMode && messages.length === 0 && convId) {
         await updateConversationTitle(convId, generateTitle(messageToSend));
         await loadConversations();
       }
@@ -244,7 +295,9 @@ export default function HomePage() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'エラーが発生しました。APIキーが正しく設定されているか確認してください。',
+        content: isDemoMode
+          ? 'デモモード: OpenRouter APIキーが設定されていません。.env.localファイルにOPENROUTER_API_KEYを設定してください。'
+          : 'エラーが発生しました。APIキーが正しく設定されているか確認してください。',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -254,7 +307,7 @@ export default function HomePage() {
     }
   };
 
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-3 text-muted-foreground">
@@ -265,8 +318,23 @@ export default function HomePage() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">認証が必要です</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-muted flex">
+      {isDemoMode && (
+        <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-yellow-900 text-center py-1 text-sm z-[100]">
+          デモモード - Supabase未設定
+        </div>
+      )}
       <Sidebar
         conversations={conversations}
         currentConversationId={currentConversationId}
@@ -277,7 +345,7 @@ export default function HomePage() {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={`flex-1 flex flex-col min-w-0 ${isDemoMode ? 'pt-7' : ''}`}>
         <ChatHeader
           user={user}
           onMenuClick={() => setIsSidebarOpen(true)}
