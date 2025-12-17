@@ -230,13 +230,9 @@ export default function HomePage() {
 
   // スライド生成中のタイムアウト処理（60秒後に強制解除）
   useEffect(() => {
-    console.log('[SlideAI] useEffect実行: isGeneratingSlide =', isGeneratingSlide);
     if (!isGeneratingSlide) return;
 
-    console.log('[SlideAI] タイムアウト開始: 60秒後に生成中状態を解除します');
     const timeout = setTimeout(() => {
-      console.log('[SlideAI] タイムアウト発火: 生成中状態を解除');
-      // インターバルもクリア
       if (popupCheckIntervalRef.current) {
         clearInterval(popupCheckIntervalRef.current);
         popupCheckIntervalRef.current = null;
@@ -246,9 +242,7 @@ export default function HomePage() {
     }, 60000);
 
     return () => {
-      console.log('[SlideAI] タイムアウトクリア');
       clearTimeout(timeout);
-      // インターバルもクリア
       if (popupCheckIntervalRef.current) {
         clearInterval(popupCheckIntervalRef.current);
         popupCheckIntervalRef.current = null;
@@ -257,10 +251,8 @@ export default function HomePage() {
   }, [isGeneratingSlide]);
 
   const handleGenerateSlide = async () => {
-    console.log('[SlideAI] handleGenerateSlide開始');
     if (messages.length === 0) return;
 
-    console.log('[SlideAI] setIsGeneratingSlide(true)を実行');
     setIsGeneratingSlide(true);
     setSlideResult(null);
 
@@ -316,9 +308,7 @@ export default function HomePage() {
         // ポップアップの状態を監視（閉じられたら生成中を解除）
         popupCheckIntervalRef.current = setInterval(() => {
           try {
-            // Cross-origin制限でclosedにアクセスできない場合もある
             if (!popupRef.current || popupRef.current.closed) {
-              console.log('[SlideAI] ポップアップが閉じられました');
               if (popupCheckIntervalRef.current) {
                 clearInterval(popupCheckIntervalRef.current);
                 popupCheckIntervalRef.current = null;
@@ -326,9 +316,8 @@ export default function HomePage() {
               setIsGeneratingSlide(false);
               popupRef.current = null;
             }
-          } catch (e) {
-            // アクセスエラーの場合はポップアップが別ドメインにリダイレクトされた
-            // useEffectのタイムアウトで解除されるのを待つ
+          } catch {
+            // Cross-origin制限でアクセスできない場合はタイムアウトで解除
           }
         }, 500);
       } else if (result.success && result.slideUrl) {
