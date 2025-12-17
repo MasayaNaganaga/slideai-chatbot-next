@@ -838,17 +838,33 @@ function createSummarySlide(slide, content, index) {
 // ============================================
 
 function createHtmlResponse(success, error, slideUrl) {
+  const closeScript = `
+    function closeWindow() {
+      if (window.opener) {
+        window.close();
+      } else {
+        // window.close()が動作しない場合は空白ページに遷移
+        window.open('about:blank', '_self');
+        window.close();
+      }
+      // それでも閉じない場合のフォールバック
+      setTimeout(function() {
+        document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:sans-serif;"><p style="color:#718096;">このタブを閉じてください</p></div>';
+      }, 100);
+    }
+  `;
+
   let html;
   if (success && slideUrl) {
     html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SlideAI</title>
-<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:linear-gradient(135deg,#1a365d,#2c5282)}.container{text-align:center;background:white;padding:50px;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}.success{color:#38a169;font-size:60px;margin-bottom:20px}h1{color:#1a365d;margin-bottom:10px;font-size:24px}p{color:#718096;margin-bottom:25px}a{display:inline-block;background:linear-gradient(135deg,#3182ce,#2c5282);color:white;padding:15px 35px;border-radius:10px;text-decoration:none;font-weight:bold;transition:transform 0.2s}a:hover{transform:scale(1.05)}.close{margin-top:25px;color:#a0aec0;cursor:pointer;font-size:14px}</style></head>
-<body><div class="container"><div class="success">✓</div><h1>スライド生成完了</h1><p>プレゼンテーションが作成されました</p><a href="${slideUrl}" target="_blank">スライドを開く</a><p class="close" onclick="window.close()">閉じる</p></div>
-<script>if(window.opener){window.opener.postMessage({type:'slideGenerated',success:true,slideUrl:'${slideUrl}'},'*')}</script></body></html>`;
+<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:linear-gradient(135deg,#1a365d,#2c5282)}.container{text-align:center;background:white;padding:50px;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}.success{color:#38a169;font-size:60px;margin-bottom:20px}h1{color:#1a365d;margin-bottom:10px;font-size:24px}p{color:#718096;margin-bottom:25px}a{display:inline-block;background:linear-gradient(135deg,#3182ce,#2c5282);color:white;padding:15px 35px;border-radius:10px;text-decoration:none;font-weight:bold;transition:transform 0.2s}a:hover{transform:scale(1.05)}.close{margin-top:25px;color:#a0aec0;cursor:pointer;font-size:14px;text-decoration:underline}</style></head>
+<body><div class="container"><div class="success">✓</div><h1>スライド生成完了</h1><p>プレゼンテーションが作成されました</p><a href="${slideUrl}" target="_blank">スライドを開く</a><p class="close" onclick="closeWindow()">閉じる</p></div>
+<script>${closeScript}if(window.opener){window.opener.postMessage({type:'slideGenerated',success:true,slideUrl:'${slideUrl}'},'*')}</script></body></html>`;
   } else {
     html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SlideAI - Error</title>
-<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#fef2f2}.container{text-align:center;background:white;padding:50px;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.1)}.error{color:#e53e3e;font-size:60px;margin-bottom:20px}h1{color:#c53030;margin-bottom:10px}p{color:#718096;margin-bottom:20px}.close{color:#a0aec0;cursor:pointer}</style></head>
-<body><div class="container"><div class="error">✕</div><h1>エラー</h1><p>${error || 'スライドの生成に失敗しました'}</p><p class="close" onclick="window.close()">閉じる</p></div>
-<script>if(window.opener){window.opener.postMessage({type:'slideGenerated',success:false,error:'${error||'Unknown error'}'},'*')}</script></body></html>`;
+<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#fef2f2}.container{text-align:center;background:white;padding:50px;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.1)}.error{color:#e53e3e;font-size:60px;margin-bottom:20px}h1{color:#c53030;margin-bottom:10px}p{color:#718096;margin-bottom:20px}.close{color:#a0aec0;cursor:pointer;text-decoration:underline}</style></head>
+<body><div class="container"><div class="error">✕</div><h1>エラー</h1><p>${error || 'スライドの生成に失敗しました'}</p><p class="close" onclick="closeWindow()">閉じる</p></div>
+<script>${closeScript}if(window.opener){window.opener.postMessage({type:'slideGenerated',success:false,error:'${error||'Unknown error'}'},'*')}</script></body></html>`;
   }
   return HtmlService.createHtmlOutput(html);
 }
