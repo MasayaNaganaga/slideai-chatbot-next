@@ -262,6 +262,7 @@ function createTableOfContents(slide, slides) {
 
   slides.slice(0, maxItems).forEach((content, i) => {
     const y = startY + (i * itemHeight);
+    const itemTitle = content.title || `スライド ${i + 1}`;
 
     // 番号
     const numBox = slide.insertTextBox(String(i + 1).padStart(2, '0'), 60, y, 40, 30);
@@ -272,7 +273,7 @@ function createTableOfContents(slide, slides) {
       .setFontFamily(FONTS.accent);
 
     // タイトル
-    const itemBox = slide.insertTextBox(content.title || '', 110, y, PAGE_WIDTH - 180, 30);
+    const itemBox = slide.insertTextBox(itemTitle, 110, y, PAGE_WIDTH - 180, 30);
     itemBox.getText().getTextStyle()
       .setFontSize(14)
       .setForegroundColor(COLORS.darkGray)
@@ -402,15 +403,18 @@ function createStandardSlide(slide, content, index) {
   }
 
   // 箇条書き
-  if (content.bullets && content.bullets.length > 0) {
+  if (content.bullets && Array.isArray(content.bullets) && content.bullets.length > 0) {
     content.bullets.forEach((bullet, i) => {
+      if (!bullet) return;
+      const bulletText = String(bullet);
+
       // ドット
       const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, 35, currentY + 6, 8, 8);
       dot.getFill().setSolidFill(COLORS.blue);
       dot.getBorder().setTransparent();
 
       // テキスト
-      const bulletBox = slide.insertTextBox(bullet, 55, currentY, PAGE_WIDTH - 90, 25);
+      const bulletBox = slide.insertTextBox(bulletText, 55, currentY, PAGE_WIDTH - 90, 25);
       bulletBox.getText().getTextStyle()
         .setFontSize(13)
         .setForegroundColor(COLORS.darkGray)
@@ -481,6 +485,7 @@ function createTwoColumnSlide(slide, content, index) {
 }
 
 function createColumnContent(slide, column, x, y, width) {
+  if (!column) return;
   let currentY = y;
 
   // カラムタイトル
@@ -495,13 +500,14 @@ function createColumnContent(slide, column, x, y, width) {
   }
 
   // 箇条書き
-  if (column.bullets) {
+  if (column.bullets && Array.isArray(column.bullets)) {
     column.bullets.forEach(bullet => {
+      if (!bullet) return;
       const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 5, currentY + 5, 6, 6);
       dot.getFill().setSolidFill(COLORS.blue);
       dot.getBorder().setTransparent();
 
-      const bulletBox = slide.insertTextBox(bullet, x + 20, currentY, width - 25, 22);
+      const bulletBox = slide.insertTextBox(String(bullet), x + 20, currentY, width - 25, 22);
       bulletBox.getText().getTextStyle()
         .setFontSize(11)
         .setForegroundColor(COLORS.darkGray)
@@ -567,6 +573,8 @@ function createStatsSlide(slide, content, index) {
 
   stats.slice(0, 4).forEach((stat, i) => {
     const x = 30 + (i * cardWidth) + 10;
+    const statValue = stat.value || '-';
+    const statLabel = stat.label || '';
 
     // カード背景
     const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, startY, cardWidth - 20, cardHeight);
@@ -579,21 +587,25 @@ function createStatsSlide(slide, content, index) {
     colorBar.getBorder().setTransparent();
 
     // 数値
-    const valueBox = slide.insertTextBox(stat.value || '', x + 10, startY + 25, cardWidth - 40, 50);
-    valueBox.getText().getTextStyle()
-      .setFontSize(32)
-      .setBold(true)
-      .setForegroundColor(cardColors[i % cardColors.length])
-      .setFontFamily(FONTS.accent);
-    valueBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    const valueBox = slide.insertTextBox(statValue, x + 10, startY + 25, cardWidth - 40, 50);
+    if (statValue) {
+      valueBox.getText().getTextStyle()
+        .setFontSize(32)
+        .setBold(true)
+        .setForegroundColor(cardColors[i % cardColors.length])
+        .setFontFamily(FONTS.accent);
+      valueBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    }
 
     // ラベル
-    const labelBox = slide.insertTextBox(stat.label || '', x + 10, startY + 85, cardWidth - 40, 50);
-    labelBox.getText().getTextStyle()
-      .setFontSize(12)
-      .setForegroundColor(COLORS.darkGray)
-      .setFontFamily(FONTS.body);
-    labelBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    if (statLabel) {
+      const labelBox = slide.insertTextBox(statLabel, x + 10, startY + 85, cardWidth - 40, 50);
+      labelBox.getText().getTextStyle()
+        .setFontSize(12)
+        .setForegroundColor(COLORS.darkGray)
+        .setFontFamily(FONTS.body);
+      labelBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    }
   });
 
   // 補足（箇条書きがあれば下に表示）
@@ -650,10 +662,12 @@ function createComparisonSlide(slide, content, index) {
     .setForegroundColor(COLORS.red)
     .setFontFamily(FONTS.title);
 
-  if (comp.beforeItems) {
+  if (comp.beforeItems && Array.isArray(comp.beforeItems)) {
     let y = startY + 50;
     comp.beforeItems.forEach(item => {
-      const itemBox = slide.insertTextBox('✕ ' + item, 50, y, colWidth - 40, 25);
+      if (!item) return;
+      const itemText = '✕ ' + String(item);
+      const itemBox = slide.insertTextBox(itemText, 50, y, colWidth - 40, 25);
       itemBox.getText().getTextStyle()
         .setFontSize(12)
         .setForegroundColor(COLORS.darkGray)
@@ -682,10 +696,12 @@ function createComparisonSlide(slide, content, index) {
     .setForegroundColor(COLORS.green)
     .setFontFamily(FONTS.title);
 
-  if (comp.afterItems) {
+  if (comp.afterItems && Array.isArray(comp.afterItems)) {
     let y = startY + 50;
     comp.afterItems.forEach(item => {
-      const itemBox = slide.insertTextBox('✓ ' + item, PAGE_WIDTH / 2 + 40, y, colWidth - 40, 25);
+      if (!item) return;
+      const itemText = '✓ ' + String(item);
+      const itemBox = slide.insertTextBox(itemText, PAGE_WIDTH / 2 + 40, y, colWidth - 40, 25);
       itemBox.getText().getTextStyle()
         .setFontSize(12)
         .setForegroundColor(COLORS.white)
@@ -711,13 +727,15 @@ function createQuoteSlide(slide, content, index) {
     .setFontFamily('Georgia');
 
   // 引用文
-  const quoteText = content.quote || content.message || '';
+  const quoteText = content.quote || content.message || content.title || '　';
   const quoteBox = slide.insertTextBox(quoteText, 80, 140, PAGE_WIDTH - 160, 150);
-  quoteBox.getText().getTextStyle()
-    .setFontSize(24)
-    .setItalic(true)
-    .setForegroundColor(COLORS.white)
-    .setFontFamily(FONTS.body);
+  if (quoteText.trim()) {
+    quoteBox.getText().getTextStyle()
+      .setFontSize(24)
+      .setItalic(true)
+      .setForegroundColor(COLORS.white)
+      .setFontFamily(FONTS.body);
+  }
 
   // 出典
   if (content.source) {
@@ -767,14 +785,18 @@ function createSummarySlide(slide, content, index) {
   }
 
   // ポイント（番号付き）
-  if (content.bullets && content.bullets.length > 0) {
+  if (content.bullets && Array.isArray(content.bullets) && content.bullets.length > 0) {
     let y = 180;
-    content.bullets.forEach((bullet, i) => {
+    let bulletIndex = 0;
+    content.bullets.forEach((bullet) => {
+      if (!bullet) return;
+      const bulletText = String(bullet);
+
       // 番号バッジ
       const numBadge = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, 60, y, 28, 28);
       numBadge.getFill().setSolidFill(COLORS.orange);
       numBadge.getBorder().setTransparent();
-      numBadge.getText().setText(String(i + 1));
+      numBadge.getText().setText(String(bulletIndex + 1));
       numBadge.getText().getTextStyle()
         .setFontSize(14)
         .setBold(true)
@@ -783,13 +805,14 @@ function createSummarySlide(slide, content, index) {
       numBadge.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
       // テキスト
-      const bulletBox = slide.insertTextBox(bullet, 100, y + 2, PAGE_WIDTH - 180, 28);
+      const bulletBox = slide.insertTextBox(bulletText, 100, y + 2, PAGE_WIDTH - 180, 28);
       bulletBox.getText().getTextStyle()
         .setFontSize(15)
         .setForegroundColor(COLORS.white)
         .setFontFamily(FONTS.body);
 
       y += 40;
+      bulletIndex++;
     });
   }
 
