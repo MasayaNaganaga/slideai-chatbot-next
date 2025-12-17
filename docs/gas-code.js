@@ -194,6 +194,16 @@ function detectBestLayout(content) {
 // ============================================
 
 function createTitleSlide(slide, title, subtitle) {
+  // 既存のプレースホルダーを全て削除
+  const shapes = slide.getShapes();
+  shapes.forEach(shape => {
+    try {
+      shape.remove();
+    } catch (e) {
+      // 削除できない場合は無視
+    }
+  });
+
   // 背景：Dexall風ダークネイビー
   slide.getBackground().setSolidFill(COLORS.navy);
 
