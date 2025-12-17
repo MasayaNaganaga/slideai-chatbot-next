@@ -19,8 +19,10 @@ import {
   updateConversationTitle,
   type Conversation,
 } from '@/lib/database';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Presentation, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { User } from '@supabase/supabase-js';
+import type { GenerateSlideResponse } from '@/types/slide';
 
 interface Message {
   id: string;
@@ -58,6 +60,8 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [streamingContent, setStreamingContent] = useState('');
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isGeneratingSlide, setIsGeneratingSlide] = useState(false);
+  const [slideResult, setSlideResult] = useState<GenerateSlideResponse | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -190,6 +194,97 @@ export default function HomePage() {
     const cleaned = content.replace(/\n/g, ' ').trim();
     if (cleaned.length <= maxLength) return cleaned;
     return cleaned.substring(0, maxLength) + '...';
+  };
+
+  // ポップアップウィンドウからのメッセージを受信
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'slideGenerated') {
+        if (event.data.success && event.data.slideUrl) {
+          setSlideResult({
+            success: true,
+            slideUrl: event.data.slideUrl,
+          });
+        } else {
+          setSlideResult({
+            success: false,
+            error: event.data.error || 'スライド生成に失敗しました',
+          });
+        }
+        setIsGeneratingSlide(false);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleGenerateSlide = async () => {
+    if (messages.length === 0) return;
+
+    setIsGeneratingSlide(true);
+    setSlideResult(null);
+
+    try {
+      const history = convertToGeminiHistory(messages);
+
+      // Step 1: サーバーでスライド構造を生成
+      const response = await fetch('/api/generate-slides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ history }),
+      });
+
+      const result = await response.json();
+
+      // クライアントサイドからGASを呼び出す（フォーム送信方式）
+      const gasUrl = 'https://script.google.com/macros/s/AKfycbxBX9iS0bhVEKsdkJEivMD6I-33zsl0oPgJ2wbIATZtn87aUQJVRA-ncHmrXUEIXm_R/exec';
+      if (result.slideData && gasUrl) {
+        // Step 2: フォームを作成してPOST送信
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = gasUrl;
+        form.target = 'slideGenerator';
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'data';
+        input.value = JSON.stringify({ slideData: result.slideData });
+        form.appendChild(input);
+
+        document.body.appendChild(form);
+
+        // ポップアップウィンドウを先に開く
+        const popup = window.open('about:blank', 'slideGenerator', 'width=500,height=400,scrollbars=yes');
+
+        if (!popup) {
+          setSlideResult({
+            success: false,
+            error: 'ポップアップがブロックされました。ポップアップを許可してください。',
+          });
+          setIsGeneratingSlide(false);
+          document.body.removeChild(form);
+          return;
+        }
+
+        // フォームを送信
+        form.submit();
+        document.body.removeChild(form);
+
+        // 結果はpostMessageで受信（useEffectで処理）
+      } else if (result.success && result.slideUrl) {
+        setSlideResult(result as GenerateSlideResponse);
+        window.open(result.slideUrl, '_blank');
+        setIsGeneratingSlide(false);
+      } else {
+        setSlideResult(result as GenerateSlideResponse);
+        setIsGeneratingSlide(false);
+      }
+    } catch (error) {
+      console.error('Error generating slide:', error);
+      setSlideResult({ success: false, error: 'スライド生成に失敗しました' });
+      setIsGeneratingSlide(false);
+    }
   };
 
   const handleSendMessage = async (message?: string) => {
@@ -364,6 +459,66 @@ export default function HomePage() {
                 streamingContent={streamingContent}
                 user={user}
               />
+
+              {/* スライド生成セクション */}
+              {messages.length >= 2 && (
+                <div className="mb-4 p-4 bg-card border rounded-xl">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-sm">スライド生成</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        この会話をもとにプレゼンテーションを作成します
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleGenerateSlide}
+                      disabled={isGeneratingSlide || isTyping}
+                      className="gap-2"
+                      variant="outline"
+                    >
+                      {isGeneratingSlide ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          生成中...
+                        </>
+                      ) : (
+                        <>
+                          <Presentation className="h-4 w-4" />
+                          スライドを生成
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {slideResult && (
+                    <div className={`mt-3 p-3 rounded-lg text-sm ${
+                      slideResult.success
+                        ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                        : 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                    }`}>
+                      {slideResult.success ? (
+                        slideResult.slideUrl ? (
+                          <a
+                            href={slideResult.slideUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 hover:underline"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            スライドを開く
+                          </a>
+                        ) : slideResult.error ? (
+                          slideResult.error
+                        ) : (
+                          'スライドが生成されました。Google Driveを確認してください。'
+                        )
+                      ) : (
+                        slideResult.error || 'エラーが発生しました'
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <ChatInput
                 value={inputValue}
