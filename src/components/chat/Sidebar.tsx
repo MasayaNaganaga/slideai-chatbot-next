@@ -4,6 +4,14 @@ import { useState } from 'react';
 import { type Conversation } from '@/lib/database';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Plus, Trash2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +34,7 @@ export default function Sidebar({
   isOpen,
   onClose,
 }: SidebarProps) {
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -39,15 +47,20 @@ export default function Sidebar({
     return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (conv: Conversation, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (deleteConfirm === id) {
-      onDeleteConversation(id);
-      setDeleteConfirm(null);
-    } else {
-      setDeleteConfirm(id);
-      setTimeout(() => setDeleteConfirm(null), 3000);
+    setDeleteTarget(conv);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      onDeleteConversation(deleteTarget.id);
+      setDeleteTarget(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteTarget(null);
   };
 
   return (
@@ -108,12 +121,9 @@ export default function Sidebar({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className={cn(
-                          "h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity",
-                          deleteConfirm === conv.id && "opacity-100 text-destructive"
-                        )}
-                        onClick={(e) => handleDelete(conv.id, e)}
-                        title={deleteConfirm === conv.id ? 'もう一度クリックで削除' : '削除'}
+                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                        onClick={(e) => handleDeleteClick(conv, e)}
+                        title="削除"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -134,6 +144,26 @@ export default function Sidebar({
           </div>
         </div>
       </aside>
+
+      {/* 削除確認ダイアログ */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>会話を削除しますか？</DialogTitle>
+            <DialogDescription>
+              「{deleteTarget?.title}」を削除します。この操作は取り消せません。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleCancelDelete}>
+              キャンセル
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              削除する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
