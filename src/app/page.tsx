@@ -238,7 +238,7 @@ export default function HomePage() {
       const result = await response.json();
 
       // クライアントサイドからGASを呼び出す（フォーム送信方式）
-      const gasUrl = 'https://script.google.com/macros/s/AKfycbxBX9iS0bhVEKsdkJEivMD6I-33zsl0oPgJ2wbIATZtn87aUQJVRA-ncHmrXUEIXm_R/exec';
+      const gasUrl = 'https://script.google.com/macros/s/AKfycbyR6ywPSmSPDMLWIYIw_zamALAk-NZQ1QzSX8k1C019rk3_hCVym0TKjBoddg7s94dG/exec';
       if (result.slideData && gasUrl) {
         // Step 2: フォームを作成してPOST送信
         const form = document.createElement('form');
