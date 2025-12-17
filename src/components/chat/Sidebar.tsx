@@ -120,7 +120,7 @@ export default function Sidebar({
                       </div>
                       <button
                         type="button"
-                        className="h-7 w-7 flex items-center justify-center rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10 flex-shrink-0"
+                        className="h-7 w-7 flex items-center justify-center rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/30 flex-shrink-0 ml-2"
                         onClick={(e) => handleDeleteClick(conv, e)}
                         title="削除"
                       >
