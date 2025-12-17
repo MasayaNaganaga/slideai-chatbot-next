@@ -583,7 +583,7 @@ function createStatsSlide(slide, content, index) {
     // カード背景
     const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, startY, cardWidth - 20, cardHeight);
     card.getFill().setSolidFill(COLORS.white);
-    card.getBorder().setWeight(0);
+    card.getBorder().setTransparent();
 
     // 上部のカラーバー
     const colorBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, startY, cardWidth - 20, 5);
