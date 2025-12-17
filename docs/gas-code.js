@@ -382,8 +382,8 @@ function createStandardSlide(slide, content, index) {
 
   // ハイライト（数値やキーワード）
   if (content.highlights && content.highlights.length > 0) {
-    const hlCount = content.highlights.length;
-    const hlWidth = (PAGE_WIDTH - 80) / hlCount;
+    const hlCount = Math.max(content.highlights.length, 1);
+    const hlWidth = Math.max((PAGE_WIDTH - 80) / hlCount, 50);
 
     content.highlights.forEach((hl, i) => {
       const hlBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE,
@@ -431,6 +431,12 @@ function createStandardSlide(slide, content, index) {
 // ============================================
 
 function createTwoColumnSlide(slide, content, index) {
+  // カラムデータが不十分な場合はstandardスライドとして処理
+  if (!content.leftColumn && !content.rightColumn) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
   slide.getBackground().setSolidFill(COLORS.white);
 
   // ヘッダー
@@ -546,6 +552,13 @@ function createStatsSlide(slide, content, index) {
   // 統計カード
   const stats = content.stats || [];
   const cardCount = Math.min(stats.length, 4);
+
+  // statsが空の場合はstandardスライドとして処理
+  if (cardCount === 0) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
   const cardWidth = (PAGE_WIDTH - 80) / cardCount;
   const cardHeight = 150;
   const startY = 135;
@@ -600,6 +613,14 @@ function createStatsSlide(slide, content, index) {
 // ============================================
 
 function createComparisonSlide(slide, content, index) {
+  const comp = content.comparison || {};
+
+  // comparisonデータが不十分な場合はstandardスライドとして処理
+  if (!comp.beforeItems && !comp.afterItems) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
   slide.getBackground().setSolidFill(COLORS.white);
 
   // ヘッダー
@@ -614,8 +635,6 @@ function createComparisonSlide(slide, content, index) {
     .setBold(true)
     .setForegroundColor(COLORS.white)
     .setFontFamily(FONTS.title);
-
-  const comp = content.comparison || {};
   const colWidth = (PAGE_WIDTH - 100) / 2;
   const startY = 90;
 
