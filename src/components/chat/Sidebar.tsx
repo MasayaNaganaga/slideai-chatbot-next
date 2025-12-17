@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { type Conversation } from '@/lib/database';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
@@ -90,7 +89,7 @@ export default function Sidebar({
             </Button>
           </div>
 
-          <ScrollArea className="flex-1 p-2">
+          <div className="flex-1 overflow-y-auto p-2">
             {conversations.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-sm">
                 <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -102,7 +101,7 @@ export default function Sidebar({
                   <div
                     key={conv.id}
                     className={cn(
-                      "group px-3 py-2 rounded-lg cursor-pointer transition-all",
+                      "group px-2 py-2 rounded-lg cursor-pointer transition-all",
                       currentConversationId === conv.id
                         ? 'bg-sidebar-accent border border-sidebar-border'
                         : 'hover:bg-sidebar-accent/50'
@@ -110,7 +109,7 @@ export default function Sidebar({
                   >
                     <div className="flex items-center gap-2">
                       <div
-                        className="flex-1 min-w-0"
+                        className="flex-1 min-w-0 overflow-hidden"
                         onClick={() => onSelectConversation(conv.id)}
                       >
                         <p className="text-sm truncate font-medium text-sidebar-foreground">
@@ -122,7 +121,7 @@ export default function Sidebar({
                       </div>
                       <button
                         type="button"
-                        className="w-8 h-8 flex items-center justify-center rounded-md bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                        className="shrink-0 w-7 h-7 flex items-center justify-center rounded bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
                         onClick={(e) => handleDeleteClick(conv, e)}
                         title="削除"
                       >
@@ -133,7 +132,7 @@ export default function Sidebar({
                 ))}
               </div>
             )}
-          </ScrollArea>
+          </div>
 
           <div className="p-4 border-t border-sidebar-border">
             <p className="text-xs text-muted-foreground text-center">
