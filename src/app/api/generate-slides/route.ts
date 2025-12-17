@@ -112,7 +112,19 @@ Before/After、比較を示す
 - statsレイアウトでは2-4個のstatsを含める
 - 会話内容が薄くても、一般知識で補完して具体的な数値を入れる
 - 8-12枚のスライドを生成する
-- JSON以外のテキストは絶対に出力しない`;
+- JSON以外のテキストは絶対に出力しない
+
+## 出力形式（厳守）
+以下の形式で出力してください。他のキーで囲まないこと：
+{
+  "title": "プレゼンテーションタイトル",
+  "subtitle": "サブタイトル",
+  "slides": [
+    { "layout": "section", "title": "...", "message": "..." },
+    { "layout": "standard", "title": "...", "message": "...", "bullets": [...] },
+    ...
+  ]
+}`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -171,7 +183,33 @@ export async function POST(request: NextRequest) {
 
     let slideData: SlideData;
     try {
-      slideData = JSON.parse(slideJsonString);
+      const parsed = JSON.parse(slideJsonString);
+      console.log('AI generated JSON:', JSON.stringify(parsed, null, 2));
+
+      // AIの出力形式を正規化（様々な形式に対応）
+      if (parsed.slideData) {
+        // { slideData: { title, slides } } 形式
+        slideData = parsed.slideData;
+      } else if (parsed.presentation) {
+        // { presentation: { title, slides } } 形式
+        slideData = parsed.presentation;
+      } else if (parsed.title && parsed.slides) {
+        // { title, slides } 形式（期待形式）
+        slideData = parsed;
+      } else {
+        // その他の形式の場合、最初に見つかったtitleとslidesを探す
+        console.error('Unexpected JSON structure:', Object.keys(parsed));
+        slideData = parsed;
+      }
+
+      // 必須フィールドの検証
+      if (!slideData.title || !slideData.slides || !Array.isArray(slideData.slides)) {
+        console.error('Invalid slideData structure:', slideData);
+        return NextResponse.json(
+          { success: false, error: 'スライドデータの構造が不正です' } as GenerateSlideResponse,
+          { status: 500 }
+        );
+      }
     } catch (e) {
       console.error('Failed to parse slide JSON:', slideJsonString);
       return NextResponse.json(
