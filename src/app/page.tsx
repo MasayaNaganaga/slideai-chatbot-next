@@ -63,6 +63,7 @@ export default function HomePage() {
   const [isGeneratingSlide, setIsGeneratingSlide] = useState(false);
   const [slideResult, setSlideResult] = useState<GenerateSlideResponse | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<Window | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -213,6 +214,13 @@ export default function HomePage() {
         }
         setIsGeneratingSlide(false);
       }
+      // ポップアップを閉じるリクエスト
+      if (event.data?.type === 'closePopup') {
+        if (popupRef.current && !popupRef.current.closed) {
+          popupRef.current.close();
+          popupRef.current = null;
+        }
+      }
     };
 
     window.addEventListener('message', handleMessage);
@@ -266,6 +274,9 @@ export default function HomePage() {
           document.body.removeChild(form);
           return;
         }
+
+        // ポップアップの参照を保存（親から閉じるため）
+        popupRef.current = popup;
 
         // フォームを送信
         form.submit();

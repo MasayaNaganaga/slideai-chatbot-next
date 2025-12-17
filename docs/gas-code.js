@@ -840,17 +840,18 @@ function createSummarySlide(slide, content, index) {
 function createHtmlResponse(success, error, slideUrl) {
   const closeScript = `
     function closeWindow() {
+      // 親ウィンドウに閉じるリクエストを送信
       if (window.opener) {
-        window.close();
-      } else {
-        // window.close()が動作しない場合は空白ページに遷移
-        window.open('about:blank', '_self');
-        window.close();
+        window.opener.postMessage({ type: 'closePopup' }, '*');
       }
-      // それでも閉じない場合のフォールバック
+      // 少し待ってから自分でも閉じる試み
       setTimeout(function() {
-        document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:sans-serif;"><p style="color:#718096;">このタブを閉じてください</p></div>';
-      }, 100);
+        window.close();
+        // それでも閉じない場合
+        setTimeout(function() {
+          document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:sans-serif;"><p style="color:#718096;">このタブを閉じてください</p></div>';
+        }, 100);
+      }, 50);
     }
   `;
 
