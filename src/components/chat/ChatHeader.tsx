@@ -12,9 +12,10 @@ interface ChatHeaderProps {
   user: User | null;
   onMenuClick?: () => void;
   onSelectConversation?: (id: string) => void;
+  onHistoryDeleted?: () => void;
 }
 
-export default function ChatHeader({ user, onMenuClick, onSelectConversation }: ChatHeaderProps) {
+export default function ChatHeader({ user, onMenuClick, onSelectConversation, onHistoryDeleted }: ChatHeaderProps) {
   const [searchValue, setSearchValue] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchResults, setSearchResults] = useState<Conversation[]>([]);
@@ -128,7 +129,7 @@ export default function ChatHeader({ user, onMenuClick, onSelectConversation }: 
             )}
           </div>
 
-          <UserMenu user={user} />
+          <UserMenu user={user} onHistoryDeleted={onHistoryDeleted} />
         </div>
       </div>
     </header>

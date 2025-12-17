@@ -153,3 +153,89 @@ export const searchConversations = async (userId: string, query: string): Promis
 
   return data || [];
 };
+
+// 全会話を削除
+export const deleteAllConversations = async (userId: string): Promise<void> => {
+  const supabase = createClient();
+
+  // 該当ユーザーの全会話IDを取得
+  const { data: conversations, error: fetchError } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('user_id', userId);
+
+  if (fetchError) {
+    console.error('Error fetching conversations:', fetchError);
+    throw fetchError;
+  }
+
+  if (!conversations || conversations.length === 0) return;
+
+  const conversationIds = conversations.map((c) => c.id);
+
+  // 全メッセージを削除
+  const { error: messagesError } = await supabase
+    .from('messages')
+    .delete()
+    .in('conversation_id', conversationIds);
+
+  if (messagesError) {
+    console.error('Error deleting messages:', messagesError);
+    throw messagesError;
+  }
+
+  // 全会話を削除
+  const { error: convError } = await supabase
+    .from('conversations')
+    .delete()
+    .eq('user_id', userId);
+
+  if (convError) {
+    console.error('Error deleting conversations:', convError);
+    throw convError;
+  }
+};
+
+// エクスポート用: 会話とメッセージを取得
+export interface ConversationWithMessages extends Conversation {
+  messages: Message[];
+}
+
+export const getConversationsWithMessages = async (userId: string): Promise<ConversationWithMessages[]> => {
+  const supabase = createClient();
+
+  const { data: conversations, error: convError } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false });
+
+  if (convError) {
+    console.error('Error fetching conversations:', convError);
+    throw convError;
+  }
+
+  if (!conversations || conversations.length === 0) return [];
+
+  const result: ConversationWithMessages[] = [];
+
+  for (const conv of conversations) {
+    const { data: messages, error: msgError } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conv.id)
+      .order('created_at', { ascending: true });
+
+    if (msgError) {
+      console.error('Error fetching messages:', msgError);
+      throw msgError;
+    }
+
+    result.push({
+      ...conv,
+      messages: messages || [],
+    });
+  }
+
+  return result;
+};

@@ -53,6 +53,39 @@
   --font-mono: var(--font-geist-mono), monospace;
 }
 
+/* Dark Mode Theme */
+.dark {
+  --color-background: #0F172A;
+  --color-foreground: #E2E8F0;
+
+  --color-card: #1E293B;
+  --color-card-foreground: #E2E8F0;
+
+  --color-popover: #1E293B;
+  --color-popover-foreground: #E2E8F0;
+
+  --color-secondary: #334155;
+  --color-secondary-foreground: #E2E8F0;
+
+  --color-muted: #1E293B;
+  --color-muted-foreground: #94A3B8;
+
+  --color-accent: #334155;
+  --color-accent-foreground: #E2E8F0;
+
+  --color-destructive: #DC2626;
+  --color-destructive-foreground: #FFFFFF;
+
+  --color-border: #334155;
+  --color-input: #334155;
+  --color-ring: #704DD4;
+
+  --color-sidebar: #1E293B;
+  --color-sidebar-foreground: #E2E8F0;
+  --color-sidebar-accent: #334155;
+  --color-sidebar-border: #334155;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

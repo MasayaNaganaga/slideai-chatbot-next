@@ -184,6 +184,12 @@ export default function HomePage() {
     }
   };
 
+  const handleHistoryDeleted = () => {
+    setConversations([]);
+    setCurrentConversationId(null);
+    setMessages([]);
+  };
+
   const convertToGeminiHistory = (msgs: Message[]): ChatMessage[] => {
     return msgs.map((m) => ({
       role: m.role === 'user' ? 'user' : 'model',
@@ -493,6 +499,7 @@ export default function HomePage() {
           user={user}
           onMenuClick={() => setIsSidebarOpen(true)}
           onSelectConversation={handleSelectConversation}
+          onHistoryDeleted={handleHistoryDeleted}
         />
 
         <main className="flex-1 overflow-hidden flex flex-col max-w-5xl w-full mx-auto px-4 py-6">
