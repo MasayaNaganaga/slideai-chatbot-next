@@ -1,394 +1,872 @@
 /**
- * SlideAI - Google Apps Script
+ * SlideAI - Google Apps Script v2.0
  *
- * このコードをGoogle Apps Scriptにコピーして使用してください。
+ * 複数レイアウト対応・高品質デザイン版
  *
  * セットアップ手順:
  * 1. script.google.com で新しいプロジェクトを作成
  * 2. このコードをコピー＆ペースト
  * 3. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」を選択
  * 4. アクセスできるユーザー: 「全員」を選択
- * 5. デプロイ後のURLを .env.local の GAS_WEBAPP_URL に設定
+ * 5. デプロイ後のURLを設定
  */
 
-/**
- * POSTリクエストを処理するエントリポイント（フォーム送信対応）
- */
+// ============================================
+// 定数定義
+// ============================================
+
+const PAGE_WIDTH = 720;
+const PAGE_HEIGHT = 405;
+
+// カラーパレット（プロフェッショナルなビジネステーマ）
+const COLORS = {
+  // プライマリ
+  navy: '#1a365d',
+  darkBlue: '#2c5282',
+  blue: '#3182ce',
+  lightBlue: '#63b3ed',
+
+  // アクセント
+  orange: '#ed8936',
+  green: '#38a169',
+  red: '#e53e3e',
+  purple: '#805ad5',
+
+  // ニュートラル
+  white: '#ffffff',
+  offWhite: '#f7fafc',
+  lightGray: '#edf2f7',
+  gray: '#a0aec0',
+  darkGray: '#4a5568',
+  black: '#1a202c',
+};
+
+// フォント設定
+const FONTS = {
+  title: 'Noto Sans JP',
+  body: 'Noto Sans JP',
+  accent: 'Noto Sans JP',
+};
+
+// ============================================
+// エントリポイント
+// ============================================
+
 function doPost(e) {
   try {
     let data;
-
-    // フォームデータとして送信された場合
     if (e.parameter && e.parameter.data) {
       data = JSON.parse(e.parameter.data);
-    }
-    // JSON本文として送信された場合
-    else if (e.postData && e.postData.contents) {
+    } else if (e.postData && e.postData.contents) {
       data = JSON.parse(e.postData.contents);
-    }
-    else {
+    } else {
       return createHtmlResponse(false, 'No data provided', null);
     }
 
     const slideData = data.slideData;
-
     if (!slideData || !slideData.title || !slideData.slides) {
       return createHtmlResponse(false, 'Invalid slide data', null);
     }
 
     const result = createPresentation(slideData);
     return createHtmlResponse(true, null, result.url);
-
   } catch (error) {
     console.error('Error in doPost:', error);
     return createHtmlResponse(false, error.message, null);
   }
 }
 
-/**
- * GETリクエストを処理（HTML応答対応）
- */
 function doGet(e) {
   try {
     const dataParam = e.parameter.data;
-
-    // データがない場合はステータスを返す
     if (!dataParam) {
       return createJsonResponse({
         success: true,
-        message: 'SlideAI GAS API is running',
+        message: 'SlideAI GAS API v2.0 is running',
         timestamp: new Date().toISOString()
       });
     }
 
-    // データをデコードしてパース
     const data = JSON.parse(decodeURIComponent(dataParam));
     const slideData = data.slideData;
-
     if (!slideData || !slideData.title || !slideData.slides) {
       return createHtmlResponse(false, 'Invalid slide data', null);
     }
 
     const result = createPresentation(slideData);
     return createHtmlResponse(true, null, result.url);
-
   } catch (error) {
     console.error('Error in doGet:', error);
     return createHtmlResponse(false, error.message, null);
   }
 }
 
-/**
- * HTML形式のレスポンスを作成（ポップアップ用）
- */
-function createHtmlResponse(success, error, slideUrl) {
-  let html;
+// ============================================
+// メイン処理
+// ============================================
 
-  if (success && slideUrl) {
-    html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>SlideAI - 生成完了</title>
-  <style>
-    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f0f9ff; }
-    .container { text-align: center; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-    .success { color: #059669; font-size: 48px; margin-bottom: 20px; }
-    h1 { color: #1e40af; margin-bottom: 10px; }
-    p { color: #6b7280; margin-bottom: 20px; }
-    a { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; }
-    a:hover { background: #1d4ed8; }
-    .close { margin-top: 20px; color: #6b7280; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="success">✓</div>
-    <h1>スライド生成完了！</h1>
-    <p>プレゼンテーションが正常に作成されました</p>
-    <a href="${slideUrl}" target="_blank">スライドを開く</a>
-    <p class="close" onclick="window.close()">このウィンドウを閉じる</p>
-  </div>
-  <script>
-    // 親ウィンドウに結果を通知
-    if (window.opener) {
-      window.opener.postMessage({ type: 'slideGenerated', success: true, slideUrl: '${slideUrl}' }, '*');
-    }
-  </script>
-</body>
-</html>`;
-  } else {
-    html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>SlideAI - エラー</title>
-  <style>
-    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #fef2f2; }
-    .container { text-align: center; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-    .error { color: #dc2626; font-size: 48px; margin-bottom: 20px; }
-    h1 { color: #991b1b; margin-bottom: 10px; }
-    p { color: #6b7280; margin-bottom: 20px; }
-    .close { margin-top: 20px; color: #6b7280; cursor: pointer; text-decoration: underline; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="error">✕</div>
-    <h1>エラーが発生しました</h1>
-    <p>${error || 'スライドの生成に失敗しました'}</p>
-    <p class="close" onclick="window.close()">このウィンドウを閉じる</p>
-  </div>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ type: 'slideGenerated', success: false, error: '${error || 'Unknown error'}' }, '*');
-    }
-  </script>
-</body>
-</html>`;
-  }
-
-  return HtmlService.createHtmlOutput(html);
-}
-
-// デザインテーマの色設定
-const THEME = {
-  primary: '#1e40af',      // 濃い青
-  secondary: '#3b82f6',    // 明るい青
-  accent: '#f59e0b',       // オレンジ
-  background: '#f8fafc',   // 薄いグレー
-  titleBg: '#1e3a5f',      // タイトルスライド背景
-  text: '#1f2937',         // テキスト色
-  lightText: '#ffffff',    // 明るいテキスト
-  headerBg: '#2563eb',     // ヘッダー背景
-};
-
-/**
- * プレゼンテーションを作成
- */
 function createPresentation(slideData) {
-  // 新しいプレゼンテーションを作成
   const presentation = SlidesApp.create(slideData.title);
   const presentationId = presentation.getId();
 
-  // デフォルトのスライドを取得（タイトルスライド用に使用）
-  const slides = presentation.getSlides();
-  const titleSlide = slides[0];
-
   // タイトルスライドを設定
-  setupTitleSlide(titleSlide, slideData.title, slideData.subtitle);
+  const titleSlide = presentation.getSlides()[0];
+  createTitleSlide(titleSlide, slideData.title, slideData.subtitle);
+
+  // 目次スライドを追加（スライドが5枚以上の場合）
+  if (slideData.slides.length >= 5) {
+    const tocSlide = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+    createTableOfContents(tocSlide, slideData.slides);
+  }
 
   // コンテンツスライドを追加
-  slideData.slides.forEach((slideContent, index) => {
-    const newSlide = presentation.appendSlide(SlidesApp.PredefinedLayout.TITLE_AND_BODY);
-    setupContentSlide(newSlide, slideContent, index);
+  slideData.slides.forEach((content, index) => {
+    const slide = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+    const layout = content.layout || detectBestLayout(content);
+
+    switch (layout) {
+      case 'section':
+        createSectionSlide(slide, content, index);
+        break;
+      case 'twoColumn':
+        createTwoColumnSlide(slide, content, index);
+        break;
+      case 'stats':
+        createStatsSlide(slide, content, index);
+        break;
+      case 'comparison':
+        createComparisonSlide(slide, content, index);
+        break;
+      case 'quote':
+        createQuoteSlide(slide, content, index);
+        break;
+      case 'summary':
+        createSummarySlide(slide, content, index);
+        break;
+      default:
+        createStandardSlide(slide, content, index);
+    }
+
+    // スピーカーノートを追加
+    if (content.notes) {
+      slide.getNotesPage().getSpeakerNotesShape().getText().setText(content.notes);
+    }
   });
 
-  // プレゼンテーションを保存
   presentation.saveAndClose();
-
   return {
     id: presentationId,
     url: `https://docs.google.com/presentation/d/${presentationId}/edit`
   };
 }
 
-// Google Slidesの標準サイズ（16:9、ポイント単位）
-const PAGE_WIDTH = 720;
-const PAGE_HEIGHT = 405;
+// 最適なレイアウトを自動判定
+function detectBestLayout(content) {
+  // 統計データがある場合
+  if (content.stats && content.stats.length > 0) {
+    return 'stats';
+  }
+  // 比較データがある場合
+  if (content.comparison) {
+    return 'comparison';
+  }
+  // 引用がある場合
+  if (content.quote) {
+    return 'quote';
+  }
+  // セクション区切りの場合（本文なし、メッセージのみ）
+  if (content.isSection || (!content.body && !content.bullets && content.message)) {
+    return 'section';
+  }
+  // まとめスライドの場合
+  if (content.isSummary || content.title?.includes('まとめ') || content.title?.includes('結論')) {
+    return 'summary';
+  }
+  // 左右に分けるコンテンツがある場合
+  if (content.leftColumn || content.rightColumn) {
+    return 'twoColumn';
+  }
+  return 'standard';
+}
 
-/**
- * タイトルスライドを設定
- */
-function setupTitleSlide(slide, title, subtitle) {
-  // 背景をグラデーション風の色に設定
-  slide.getBackground().setSolidFill(THEME.titleBg);
+// ============================================
+// タイトルスライド
+// ============================================
 
-  const shapes = slide.getShapes();
+function createTitleSlide(slide, title, subtitle) {
+  // 背景：グラデーション風の2色構成
+  slide.getBackground().setSolidFill(COLORS.navy);
 
-  shapes.forEach(shape => {
-    if (shape.getShapeType() === SlidesApp.ShapeType.TEXT_BOX) {
-      const placeholder = shape.getPlaceholderType();
+  // 装飾：右下の大きな円
+  const decorCircle = slide.insertShape(SlidesApp.ShapeType.ELLIPSE,
+    PAGE_WIDTH - 200, PAGE_HEIGHT - 150, 350, 350);
+  decorCircle.getFill().setSolidFill(COLORS.darkBlue);
+  decorCircle.getBorder().setTransparent();
+  decorCircle.sendToBack();
 
-      if (placeholder === SlidesApp.PlaceholderType.CENTERED_TITLE ||
-          placeholder === SlidesApp.PlaceholderType.TITLE) {
-        shape.getText().setText(title);
-        shape.getText().getTextStyle()
-          .setFontSize(44)
-          .setBold(true)
-          .setForegroundColor(THEME.lightText)
-          .setFontFamily('Noto Sans JP');
-      } else if (placeholder === SlidesApp.PlaceholderType.SUBTITLE) {
-        shape.getText().setText(subtitle || 'Generated by SlideAI');
-        shape.getText().getTextStyle()
-          .setFontSize(18)
-          .setForegroundColor('#94a3b8')
-          .setFontFamily('Noto Sans JP');
-      }
-    }
-  });
-
-  // 装飾用のアクセントライン
-  const accentLine = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 280, PAGE_WIDTH, 6);
-  accentLine.getFill().setSolidFill(THEME.accent);
+  // 装飾：アクセントライン
+  const accentLine = slide.insertShape(SlidesApp.ShapeType.RECTANGLE,
+    60, PAGE_HEIGHT / 2 + 40, 100, 4);
+  accentLine.getFill().setSolidFill(COLORS.orange);
   accentLine.getBorder().setTransparent();
 
+  // タイトル
+  const titleBox = slide.insertTextBox(title, 60, PAGE_HEIGHT / 2 - 60, PAGE_WIDTH - 120, 80);
+  titleBox.getText().getTextStyle()
+    .setFontSize(42)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // サブタイトル
+  const subtitleText = subtitle || new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+  const subtitleBox = slide.insertTextBox(subtitleText, 60, PAGE_HEIGHT / 2 + 55, PAGE_WIDTH - 120, 30);
+  subtitleBox.getText().getTextStyle()
+    .setFontSize(16)
+    .setForegroundColor(COLORS.lightBlue)
+    .setFontFamily(FONTS.body);
+
   // フッター
-  const footer = slide.insertTextBox('Generated by SlideAI', PAGE_WIDTH - 200, PAGE_HEIGHT - 30, 180, 20);
+  const footer = slide.insertTextBox('Generated by SlideAI', PAGE_WIDTH - 180, PAGE_HEIGHT - 30, 160, 20);
   footer.getText().getTextStyle()
-    .setFontSize(10)
-    .setForegroundColor('#64748b')
-    .setFontFamily('Noto Sans JP');
+    .setFontSize(9)
+    .setForegroundColor(COLORS.gray)
+    .setFontFamily(FONTS.body);
   footer.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
 }
 
-/**
- * コンテンツスライドを設定（メッセージライン対応）
- */
-function setupContentSlide(slide, content, index) {
-  // 背景を薄いグレーに設定
-  slide.getBackground().setSolidFill(THEME.background);
+// ============================================
+// 目次スライド
+// ============================================
 
-  // ヘッダー背景を追加
-  const headerBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, 70);
-  headerBg.getFill().setSolidFill(THEME.headerBg);
-  headerBg.getBorder().setTransparent();
-  headerBg.sendToBack();
+function createTableOfContents(slide, slides) {
+  slide.getBackground().setSolidFill(COLORS.white);
 
-  // スライド番号を追加
-  const slideNumber = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, PAGE_WIDTH - 50, 15, 35, 35);
-  slideNumber.getFill().setSolidFill(THEME.accent);
-  slideNumber.getBorder().setTransparent();
-  slideNumber.getText().setText(String(index + 1));
-  slideNumber.getText().getTextStyle()
-    .setFontSize(16)
+  // タイトル
+  const titleBox = slide.insertTextBox('Contents', 60, 40, 200, 40);
+  titleBox.getText().getTextStyle()
+    .setFontSize(28)
     .setBold(true)
-    .setForegroundColor(THEME.lightText);
-  slideNumber.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    .setForegroundColor(COLORS.navy)
+    .setFontFamily(FONTS.title);
 
-  // 既存のプレースホルダーを削除して新規作成
-  const shapes = slide.getShapes();
-  shapes.forEach(shape => {
-    if (shape.getShapeType() === SlidesApp.ShapeType.TEXT_BOX) {
-      shape.remove();
-    }
+  // アクセントライン
+  const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 60, 85, 60, 3);
+  line.getFill().setSolidFill(COLORS.orange);
+  line.getBorder().setTransparent();
+
+  // 目次項目
+  const startY = 110;
+  const itemHeight = 35;
+  const maxItems = 8;
+
+  slides.slice(0, maxItems).forEach((content, i) => {
+    const y = startY + (i * itemHeight);
+
+    // 番号
+    const numBox = slide.insertTextBox(String(i + 1).padStart(2, '0'), 60, y, 40, 30);
+    numBox.getText().getTextStyle()
+      .setFontSize(14)
+      .setBold(true)
+      .setForegroundColor(COLORS.orange)
+      .setFontFamily(FONTS.accent);
+
+    // タイトル
+    const itemBox = slide.insertTextBox(content.title || '', 110, y, PAGE_WIDTH - 180, 30);
+    itemBox.getText().getTextStyle()
+      .setFontSize(14)
+      .setForegroundColor(COLORS.darkGray)
+      .setFontFamily(FONTS.body);
   });
 
-  // タイトル（ヘッダー内）
-  const titleBox = slide.insertTextBox(content.title || '', 20, 20, PAGE_WIDTH - 80, 40);
+  // 左のアクセントバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, 8, PAGE_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.navy);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// セクション区切りスライド
+// ============================================
+
+function createSectionSlide(slide, content, index) {
+  slide.getBackground().setSolidFill(COLORS.darkBlue);
+
+  // セクション番号
+  const numBox = slide.insertTextBox(String(index + 1).padStart(2, '0'), 60, PAGE_HEIGHT / 2 - 80, 100, 50);
+  numBox.getText().getTextStyle()
+    .setFontSize(48)
+    .setBold(true)
+    .setForegroundColor(COLORS.orange)
+    .setFontFamily(FONTS.accent);
+
+  // タイトル
+  const titleBox = slide.insertTextBox(content.title || '', 60, PAGE_HEIGHT / 2 - 20, PAGE_WIDTH - 120, 60);
+  titleBox.getText().getTextStyle()
+    .setFontSize(36)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // メッセージ（あれば）
+  if (content.message) {
+    const msgBox = slide.insertTextBox(content.message, 60, PAGE_HEIGHT / 2 + 50, PAGE_WIDTH - 120, 40);
+    msgBox.getText().getTextStyle()
+      .setFontSize(16)
+      .setForegroundColor(COLORS.lightBlue)
+      .setFontFamily(FONTS.body);
+  }
+
+  // 装飾：右側の縦線
+  const vertLine = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, PAGE_WIDTH - 60, 60, 4, PAGE_HEIGHT - 120);
+  vertLine.getFill().setSolidFill(COLORS.orange);
+  vertLine.getBorder().setTransparent();
+}
+
+// ============================================
+// 標準スライド（メッセージ + 本文 + 箇条書き）
+// ============================================
+
+function createStandardSlide(slide, content, index) {
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダーエリア
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, 70);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  // タイトル
+  const titleBox = slide.insertTextBox(content.title || '', 30, 20, PAGE_WIDTH - 100, 35);
   titleBox.getText().getTextStyle()
     .setFontSize(22)
     .setBold(true)
-    .setForegroundColor(THEME.lightText)
-    .setFontFamily('Noto Sans JP');
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBox = slide.insertTextBox(String(index + 1), PAGE_WIDTH - 50, 22, 30, 30);
+  numBox.getText().getTextStyle()
+    .setFontSize(14)
+    .setBold(true)
+    .setForegroundColor(COLORS.lightBlue)
+    .setFontFamily(FONTS.accent);
+  numBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
   let currentY = 85;
 
-  // キーメッセージ（最も重要）
+  // キーメッセージ
   if (content.message) {
-    const messageBox = slide.insertTextBox(content.message, 30, currentY, PAGE_WIDTH - 60, 45);
-    messageBox.getText().getTextStyle()
+    const msgBox = slide.insertTextBox(content.message, 30, currentY, PAGE_WIDTH - 60, 40);
+    msgBox.getText().getTextStyle()
       .setFontSize(18)
       .setBold(true)
-      .setForegroundColor(THEME.primary)
-      .setFontFamily('Noto Sans JP');
+      .setForegroundColor(COLORS.navy)
+      .setFontFamily(FONTS.title);
+    currentY += 50;
 
-    // メッセージの下線
-    const messageLine = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 30, currentY + 40, PAGE_WIDTH - 60, 2);
-    messageLine.getFill().setSolidFill(THEME.secondary);
-    messageLine.getBorder().setTransparent();
-
-    currentY += 55;
+    // メッセージ下のアクセントライン
+    const msgLine = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 30, currentY - 5, 80, 3);
+    msgLine.getFill().setSolidFill(COLORS.orange);
+    msgLine.getBorder().setTransparent();
   }
 
-  // ボディ（説明文）
+  // 本文
   if (content.body) {
-    const bodyBox = slide.insertTextBox(content.body, 30, currentY, PAGE_WIDTH - 60, 50);
+    const bodyBox = slide.insertTextBox(content.body, 30, currentY, PAGE_WIDTH - 60, 45);
     bodyBox.getText().getTextStyle()
-      .setFontSize(14)
-      .setForegroundColor(THEME.text)
-      .setFontFamily('Noto Sans JP');
-    currentY += 55;
+      .setFontSize(13)
+      .setForegroundColor(COLORS.darkGray)
+      .setFontFamily(FONTS.body);
+    currentY += 50;
   }
 
-  // ハイライト（強調数値やキーワード）
+  // ハイライト（数値やキーワード）
   if (content.highlights && content.highlights.length > 0) {
-    const highlightWidth = (PAGE_WIDTH - 80) / content.highlights.length;
-    content.highlights.forEach((highlight, i) => {
-      const hlBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, 30 + (i * highlightWidth) + 5, currentY, highlightWidth - 10, 40);
-      hlBox.getFill().setSolidFill(THEME.accent);
+    const hlCount = content.highlights.length;
+    const hlWidth = (PAGE_WIDTH - 80) / hlCount;
+
+    content.highlights.forEach((hl, i) => {
+      const hlBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE,
+        30 + (i * hlWidth) + 5, currentY, hlWidth - 10, 35);
+      hlBox.getFill().setSolidFill(COLORS.lightGray);
       hlBox.getBorder().setTransparent();
-      hlBox.getText().setText(highlight);
+      hlBox.getText().setText(hl);
       hlBox.getText().getTextStyle()
-        .setFontSize(14)
+        .setFontSize(12)
         .setBold(true)
-        .setForegroundColor(THEME.lightText)
-        .setFontFamily('Noto Sans JP');
+        .setForegroundColor(COLORS.navy)
+        .setFontFamily(FONTS.body);
       hlBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     });
-    currentY += 50;
+    currentY += 45;
   }
 
   // 箇条書き
   if (content.bullets && content.bullets.length > 0) {
-    const bulletText = content.bullets.map(b => `▸ ${b}`).join('\n');
-    const bulletBox = slide.insertTextBox(bulletText, 35, currentY, PAGE_WIDTH - 70, PAGE_HEIGHT - currentY - 20);
-    bulletBox.getText().getTextStyle()
+    content.bullets.forEach((bullet, i) => {
+      // ドット
+      const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, 35, currentY + 6, 8, 8);
+      dot.getFill().setSolidFill(COLORS.blue);
+      dot.getBorder().setTransparent();
+
+      // テキスト
+      const bulletBox = slide.insertTextBox(bullet, 55, currentY, PAGE_WIDTH - 90, 25);
+      bulletBox.getText().getTextStyle()
+        .setFontSize(13)
+        .setForegroundColor(COLORS.darkGray)
+        .setFontFamily(FONTS.body);
+
+      currentY += 28;
+    });
+  }
+
+  // 左サイドのアクセントバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 70, 5, PAGE_HEIGHT - 70);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// 2カラムスライド
+// ============================================
+
+function createTwoColumnSlide(slide, content, index) {
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, 70);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  // タイトル
+  const titleBox = slide.insertTextBox(content.title || '', 30, 20, PAGE_WIDTH - 100, 35);
+  titleBox.getText().getTextStyle()
+    .setFontSize(22)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBox = slide.insertTextBox(String(index + 1), PAGE_WIDTH - 50, 22, 30, 30);
+  numBox.getText().getTextStyle()
+    .setFontSize(14)
+    .setBold(true)
+    .setForegroundColor(COLORS.lightBlue)
+    .setFontFamily(FONTS.accent);
+  numBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  const colWidth = (PAGE_WIDTH - 80) / 2;
+  const startY = 90;
+
+  // 左カラム
+  if (content.leftColumn) {
+    createColumnContent(slide, content.leftColumn, 30, startY, colWidth);
+  }
+
+  // 中央の区切り線
+  const divider = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, PAGE_WIDTH / 2 - 1, startY, 2, PAGE_HEIGHT - startY - 30);
+  divider.getFill().setSolidFill(COLORS.lightGray);
+  divider.getBorder().setTransparent();
+
+  // 右カラム
+  if (content.rightColumn) {
+    createColumnContent(slide, content.rightColumn, PAGE_WIDTH / 2 + 20, startY, colWidth);
+  }
+}
+
+function createColumnContent(slide, column, x, y, width) {
+  let currentY = y;
+
+  // カラムタイトル
+  if (column.title) {
+    const colTitle = slide.insertTextBox(column.title, x, currentY, width, 25);
+    colTitle.getText().getTextStyle()
       .setFontSize(14)
-      .setForegroundColor(THEME.text)
-      .setFontFamily('Noto Sans JP');
-
-    // 各行の行間を調整
-    bulletBox.getText().getParagraphStyle().setSpaceAbove(8);
+      .setBold(true)
+      .setForegroundColor(COLORS.navy)
+      .setFontFamily(FONTS.title);
+    currentY += 30;
   }
 
-  // 左側のアクセントバー
-  const accentBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 70, 6, PAGE_HEIGHT - 70);
-  accentBar.getFill().setSolidFill(THEME.secondary);
-  accentBar.getBorder().setTransparent();
+  // 箇条書き
+  if (column.bullets) {
+    column.bullets.forEach(bullet => {
+      const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 5, currentY + 5, 6, 6);
+      dot.getFill().setSolidFill(COLORS.blue);
+      dot.getBorder().setTransparent();
 
-  // スピーカーノートを追加
-  if (content.notes) {
-    slide.getNotesPage().getSpeakerNotesShape().getText().setText(content.notes);
+      const bulletBox = slide.insertTextBox(bullet, x + 20, currentY, width - 25, 22);
+      bulletBox.getText().getTextStyle()
+        .setFontSize(11)
+        .setForegroundColor(COLORS.darkGray)
+        .setFontFamily(FONTS.body);
+      currentY += 24;
+    });
   }
 }
 
-/**
- * JSON形式のレスポンスを作成
- */
+// ============================================
+// 統計・数値ハイライトスライド
+// ============================================
+
+function createStatsSlide(slide, content, index) {
+  slide.getBackground().setSolidFill(COLORS.offWhite);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, 70);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  // タイトル
+  const titleBox = slide.insertTextBox(content.title || '', 30, 20, PAGE_WIDTH - 100, 35);
+  titleBox.getText().getTextStyle()
+    .setFontSize(22)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBox = slide.insertTextBox(String(index + 1), PAGE_WIDTH - 50, 22, 30, 30);
+  numBox.getText().getTextStyle()
+    .setFontSize(14)
+    .setBold(true)
+    .setForegroundColor(COLORS.lightBlue)
+    .setFontFamily(FONTS.accent);
+
+  // メッセージ
+  if (content.message) {
+    const msgBox = slide.insertTextBox(content.message, 30, 85, PAGE_WIDTH - 60, 35);
+    msgBox.getText().getTextStyle()
+      .setFontSize(16)
+      .setBold(true)
+      .setForegroundColor(COLORS.navy)
+      .setFontFamily(FONTS.title);
+  }
+
+  // 統計カード
+  const stats = content.stats || [];
+  const cardCount = Math.min(stats.length, 4);
+  const cardWidth = (PAGE_WIDTH - 80) / cardCount;
+  const cardHeight = 150;
+  const startY = 135;
+
+  const cardColors = [COLORS.blue, COLORS.green, COLORS.orange, COLORS.purple];
+
+  stats.slice(0, 4).forEach((stat, i) => {
+    const x = 30 + (i * cardWidth) + 10;
+
+    // カード背景
+    const card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, startY, cardWidth - 20, cardHeight);
+    card.getFill().setSolidFill(COLORS.white);
+    card.getBorder().setWeight(0);
+
+    // 上部のカラーバー
+    const colorBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, startY, cardWidth - 20, 5);
+    colorBar.getFill().setSolidFill(cardColors[i % cardColors.length]);
+    colorBar.getBorder().setTransparent();
+
+    // 数値
+    const valueBox = slide.insertTextBox(stat.value || '', x + 10, startY + 25, cardWidth - 40, 50);
+    valueBox.getText().getTextStyle()
+      .setFontSize(32)
+      .setBold(true)
+      .setForegroundColor(cardColors[i % cardColors.length])
+      .setFontFamily(FONTS.accent);
+    valueBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    // ラベル
+    const labelBox = slide.insertTextBox(stat.label || '', x + 10, startY + 85, cardWidth - 40, 50);
+    labelBox.getText().getTextStyle()
+      .setFontSize(12)
+      .setForegroundColor(COLORS.darkGray)
+      .setFontFamily(FONTS.body);
+    labelBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  });
+
+  // 補足（箇条書きがあれば下に表示）
+  if (content.bullets && content.bullets.length > 0) {
+    const noteY = startY + cardHeight + 20;
+    const noteText = content.bullets.map(b => `• ${b}`).join('　　');
+    const noteBox = slide.insertTextBox(noteText, 30, noteY, PAGE_WIDTH - 60, 30);
+    noteBox.getText().getTextStyle()
+      .setFontSize(11)
+      .setForegroundColor(COLORS.gray)
+      .setFontFamily(FONTS.body);
+  }
+}
+
+// ============================================
+// 比較スライド
+// ============================================
+
+function createComparisonSlide(slide, content, index) {
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, 70);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  // タイトル
+  const titleBox = slide.insertTextBox(content.title || '', 30, 20, PAGE_WIDTH - 100, 35);
+  titleBox.getText().getTextStyle()
+    .setFontSize(22)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  const comp = content.comparison || {};
+  const colWidth = (PAGE_WIDTH - 100) / 2;
+  const startY = 90;
+
+  // Before/左側
+  const leftBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, 30, startY, colWidth, PAGE_HEIGHT - startY - 30);
+  leftBg.getFill().setSolidFill(COLORS.lightGray);
+  leftBg.getBorder().setTransparent();
+
+  const leftTitle = slide.insertTextBox(comp.beforeTitle || 'Before', 40, startY + 10, colWidth - 20, 30);
+  leftTitle.getText().getTextStyle()
+    .setFontSize(16)
+    .setBold(true)
+    .setForegroundColor(COLORS.red)
+    .setFontFamily(FONTS.title);
+
+  if (comp.beforeItems) {
+    let y = startY + 50;
+    comp.beforeItems.forEach(item => {
+      const itemBox = slide.insertTextBox('✕ ' + item, 50, y, colWidth - 40, 25);
+      itemBox.getText().getTextStyle()
+        .setFontSize(12)
+        .setForegroundColor(COLORS.darkGray)
+        .setFontFamily(FONTS.body);
+      y += 28;
+    });
+  }
+
+  // 矢印
+  const arrow = slide.insertTextBox('→', PAGE_WIDTH / 2 - 15, PAGE_HEIGHT / 2 - 20, 30, 40);
+  arrow.getText().getTextStyle()
+    .setFontSize(28)
+    .setBold(true)
+    .setForegroundColor(COLORS.navy)
+    .setFontFamily(FONTS.accent);
+
+  // After/右側
+  const rightBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, PAGE_WIDTH / 2 + 20, startY, colWidth, PAGE_HEIGHT - startY - 30);
+  rightBg.getFill().setSolidFill(COLORS.navy);
+  rightBg.getBorder().setTransparent();
+
+  const rightTitle = slide.insertTextBox(comp.afterTitle || 'After', PAGE_WIDTH / 2 + 30, startY + 10, colWidth - 20, 30);
+  rightTitle.getText().getTextStyle()
+    .setFontSize(16)
+    .setBold(true)
+    .setForegroundColor(COLORS.green)
+    .setFontFamily(FONTS.title);
+
+  if (comp.afterItems) {
+    let y = startY + 50;
+    comp.afterItems.forEach(item => {
+      const itemBox = slide.insertTextBox('✓ ' + item, PAGE_WIDTH / 2 + 40, y, colWidth - 40, 25);
+      itemBox.getText().getTextStyle()
+        .setFontSize(12)
+        .setForegroundColor(COLORS.white)
+        .setFontFamily(FONTS.body);
+      y += 28;
+    });
+  }
+}
+
+// ============================================
+// 引用スライド
+// ============================================
+
+function createQuoteSlide(slide, content, index) {
+  slide.getBackground().setSolidFill(COLORS.navy);
+
+  // 引用符
+  const quoteOpen = slide.insertTextBox('"', 50, 80, 80, 100);
+  quoteOpen.getText().getTextStyle()
+    .setFontSize(120)
+    .setBold(true)
+    .setForegroundColor(COLORS.darkBlue)
+    .setFontFamily('Georgia');
+
+  // 引用文
+  const quoteText = content.quote || content.message || '';
+  const quoteBox = slide.insertTextBox(quoteText, 80, 140, PAGE_WIDTH - 160, 150);
+  quoteBox.getText().getTextStyle()
+    .setFontSize(24)
+    .setItalic(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.body);
+
+  // 出典
+  if (content.source) {
+    const sourceBox = slide.insertTextBox('— ' + content.source, 80, PAGE_HEIGHT - 80, PAGE_WIDTH - 160, 30);
+    sourceBox.getText().getTextStyle()
+      .setFontSize(14)
+      .setForegroundColor(COLORS.lightBlue)
+      .setFontFamily(FONTS.body);
+  }
+
+  // スライド番号
+  const numBox = slide.insertTextBox(String(index + 1), PAGE_WIDTH - 50, PAGE_HEIGHT - 40, 30, 30);
+  numBox.getText().getTextStyle()
+    .setFontSize(12)
+    .setForegroundColor(COLORS.gray)
+    .setFontFamily(FONTS.accent);
+}
+
+// ============================================
+// まとめスライド
+// ============================================
+
+function createSummarySlide(slide, content, index) {
+  slide.getBackground().setSolidFill(COLORS.darkBlue);
+
+  // タイトル
+  const titleBox = slide.insertTextBox(content.title || 'まとめ', 60, 40, PAGE_WIDTH - 120, 50);
+  titleBox.getText().getTextStyle()
+    .setFontSize(32)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // アクセントライン
+  const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 60, 95, 80, 4);
+  line.getFill().setSolidFill(COLORS.orange);
+  line.getBorder().setTransparent();
+
+  // キーメッセージ
+  if (content.message) {
+    const msgBox = slide.insertTextBox(content.message, 60, 115, PAGE_WIDTH - 120, 50);
+    msgBox.getText().getTextStyle()
+      .setFontSize(18)
+      .setBold(true)
+      .setForegroundColor(COLORS.lightBlue)
+      .setFontFamily(FONTS.title);
+  }
+
+  // ポイント（番号付き）
+  if (content.bullets && content.bullets.length > 0) {
+    let y = 180;
+    content.bullets.forEach((bullet, i) => {
+      // 番号バッジ
+      const numBadge = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, 60, y, 28, 28);
+      numBadge.getFill().setSolidFill(COLORS.orange);
+      numBadge.getBorder().setTransparent();
+      numBadge.getText().setText(String(i + 1));
+      numBadge.getText().getTextStyle()
+        .setFontSize(14)
+        .setBold(true)
+        .setForegroundColor(COLORS.white)
+        .setFontFamily(FONTS.accent);
+      numBadge.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+      // テキスト
+      const bulletBox = slide.insertTextBox(bullet, 100, y + 2, PAGE_WIDTH - 180, 28);
+      bulletBox.getText().getTextStyle()
+        .setFontSize(15)
+        .setForegroundColor(COLORS.white)
+        .setFontFamily(FONTS.body);
+
+      y += 40;
+    });
+  }
+
+  // フッター
+  const footer = slide.insertTextBox('Thank you', PAGE_WIDTH - 120, PAGE_HEIGHT - 40, 100, 25);
+  footer.getText().getTextStyle()
+    .setFontSize(12)
+    .setItalic(true)
+    .setForegroundColor(COLORS.gray)
+    .setFontFamily(FONTS.body);
+  footer.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+}
+
+// ============================================
+// レスポンス生成
+// ============================================
+
+function createHtmlResponse(success, error, slideUrl) {
+  let html;
+  if (success && slideUrl) {
+    html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SlideAI</title>
+<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:linear-gradient(135deg,#1a365d,#2c5282)}.container{text-align:center;background:white;padding:50px;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}.success{color:#38a169;font-size:60px;margin-bottom:20px}h1{color:#1a365d;margin-bottom:10px;font-size:24px}p{color:#718096;margin-bottom:25px}a{display:inline-block;background:linear-gradient(135deg,#3182ce,#2c5282);color:white;padding:15px 35px;border-radius:10px;text-decoration:none;font-weight:bold;transition:transform 0.2s}a:hover{transform:scale(1.05)}.close{margin-top:25px;color:#a0aec0;cursor:pointer;font-size:14px}</style></head>
+<body><div class="container"><div class="success">✓</div><h1>スライド生成完了</h1><p>プレゼンテーションが作成されました</p><a href="${slideUrl}" target="_blank">スライドを開く</a><p class="close" onclick="window.close()">閉じる</p></div>
+<script>if(window.opener){window.opener.postMessage({type:'slideGenerated',success:true,slideUrl:'${slideUrl}'},'*')}</script></body></html>`;
+  } else {
+    html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SlideAI - Error</title>
+<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#fef2f2}.container{text-align:center;background:white;padding:50px;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.1)}.error{color:#e53e3e;font-size:60px;margin-bottom:20px}h1{color:#c53030;margin-bottom:10px}p{color:#718096;margin-bottom:20px}.close{color:#a0aec0;cursor:pointer}</style></head>
+<body><div class="container"><div class="error">✕</div><h1>エラー</h1><p>${error || 'スライドの生成に失敗しました'}</p><p class="close" onclick="window.close()">閉じる</p></div>
+<script>if(window.opener){window.opener.postMessage({type:'slideGenerated',success:false,error:'${error||'Unknown error'}'},'*')}</script></body></html>`;
+  }
+  return HtmlService.createHtmlOutput(html);
+}
+
 function createJsonResponse(data) {
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
 
-/**
- * テスト用関数
- */
+// ============================================
+// テスト用
+// ============================================
+
 function testCreatePresentation() {
   const testData = {
-    title: 'テストプレゼンテーション',
+    title: 'デジタルトランスフォーメーション戦略',
+    subtitle: '2024年度 経営企画部',
     slides: [
       {
-        title: 'はじめに',
-        bullets: ['ポイント1', 'ポイント2', 'ポイント3'],
-        notes: 'このスライドでは概要を説明します'
+        layout: 'section',
+        title: '現状分析',
+        message: 'デジタル化の遅れが競争力低下の主因'
       },
       {
-        title: '主な内容',
-        bullets: ['詳細1', '詳細2', '詳細3', '詳細4'],
-        notes: ''
+        layout: 'stats',
+        title: '市場環境の変化',
+        message: 'デジタル市場は急速に拡大している',
+        stats: [
+          { value: '35%', label: 'DX投資増加率\n（前年比）' },
+          { value: '72%', label: '企業のクラウド\n導入率' },
+          { value: '¥5.2兆', label: '国内DX市場\n規模' }
+        ]
       },
       {
+        layout: 'comparison',
+        title: 'DX推進による変化',
+        comparison: {
+          beforeTitle: '現状',
+          beforeItems: ['紙ベースの業務プロセス', '属人的なノウハウ', '部門間のサイロ化'],
+          afterTitle: 'DX後',
+          afterItems: ['デジタルワークフロー', 'ナレッジの可視化', 'データ統合基盤']
+        }
+      },
+      {
+        layout: 'twoColumn',
+        title: '推進体制',
+        leftColumn: {
+          title: '組織体制',
+          bullets: ['DX推進室の設置', '各部門へのDX担当配置', '外部パートナー連携']
+        },
+        rightColumn: {
+          title: 'スケジュール',
+          bullets: ['Q1: 基盤整備', 'Q2: パイロット導入', 'Q3-Q4: 全社展開']
+        }
+      },
+      {
+        layout: 'summary',
         title: 'まとめ',
-        bullets: ['結論1', '結論2'],
-        notes: '最後にまとめを伝えます'
+        message: 'DXは選択ではなく必須の経営課題',
+        bullets: [
+          'デジタル投資を3年で2倍に拡大',
+          '全社員のデジタルリテラシー向上',
+          'データドリブン経営への転換'
+        ]
       }
     ]
   };
 
   const result = createPresentation(testData);
-  console.log('Created presentation:', result);
+  console.log('Created:', result.url);
 }

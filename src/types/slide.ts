@@ -1,17 +1,57 @@
 // スライド生成用の型定義
 
+export type SlideLayout =
+  | 'standard'
+  | 'section'
+  | 'stats'
+  | 'comparison'
+  | 'twoColumn'
+  | 'quote'
+  | 'summary';
+
+export interface StatItem {
+  value: string;
+  label: string;
+}
+
+export interface ComparisonData {
+  beforeTitle?: string;
+  beforeItems?: string[];
+  afterTitle?: string;
+  afterItems?: string[];
+}
+
+export interface ColumnData {
+  title?: string;
+  bullets?: string[];
+}
+
 export interface SlideContent {
-  title: string;           // スライドタイトル
-  message?: string;        // キーメッセージ（このスライドで伝えたい1文）
-  body?: string;           // 本文（説明文）
-  bullets?: string[];      // 箇条書きポイント
-  highlights?: string[];   // 強調ポイント（数値やキーワード）
-  notes?: string;          // 発表者ノート
+  layout?: SlideLayout;
+  title: string;
+  message?: string;
+  body?: string;
+  bullets?: string[];
+  highlights?: string[];
+  notes?: string;
+  // stats layout
+  stats?: StatItem[];
+  // comparison layout
+  comparison?: ComparisonData;
+  // twoColumn layout
+  leftColumn?: ColumnData;
+  rightColumn?: ColumnData;
+  // quote layout
+  quote?: string;
+  source?: string;
+  // flags
+  isSection?: boolean;
+  isSummary?: boolean;
 }
 
 export interface SlideData {
   title: string;
-  subtitle?: string;       // サブタイトル
+  subtitle?: string;
   slides: SlideContent[];
   theme?: 'light' | 'dark' | 'corporate';
 }
