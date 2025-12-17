@@ -101,16 +101,18 @@ export default function Sidebar({
                 {conversations.map((conv) => (
                   <div
                     key={conv.id}
-                    onClick={() => onSelectConversation(conv.id)}
                     className={cn(
-                      "group px-3 py-3 rounded-lg cursor-pointer transition-all",
+                      "group px-3 py-2 rounded-lg cursor-pointer transition-all",
                       currentConversationId === conv.id
                         ? 'bg-sidebar-accent border border-sidebar-border'
                         : 'hover:bg-sidebar-accent/50'
                     )}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="flex-1 min-w-0"
+                        onClick={() => onSelectConversation(conv.id)}
+                      >
                         <p className="text-sm truncate font-medium text-sidebar-foreground">
                           {conv.title}
                         </p>
@@ -120,11 +122,11 @@ export default function Sidebar({
                       </div>
                       <button
                         type="button"
-                        className="h-7 w-7 flex items-center justify-center rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/30 flex-shrink-0 ml-2"
+                        className="w-8 h-8 flex items-center justify-center rounded-md bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
                         onClick={(e) => handleDeleteClick(conv, e)}
                         title="削除"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
