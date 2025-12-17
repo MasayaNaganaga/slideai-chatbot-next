@@ -118,15 +118,14 @@ export default function Sidebar({
                           {formatDate(conv.updated_at)}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0"
+                      <button
+                        type="button"
+                        className="h-7 w-7 flex items-center justify-center rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10 flex-shrink-0"
                         onClick={(e) => handleDeleteClick(conv, e)}
                         title="削除"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 ))}
