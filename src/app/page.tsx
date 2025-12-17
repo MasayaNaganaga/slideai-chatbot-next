@@ -64,6 +64,7 @@ export default function HomePage() {
   const [slideResult, setSlideResult] = useState<GenerateSlideResponse | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<Window | null>(null);
+  const popupCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -227,6 +228,33 @@ export default function HomePage() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  // スライド生成中のタイムアウト処理（60秒後に強制解除）
+  useEffect(() => {
+    if (!isGeneratingSlide) return;
+
+    console.log('[SlideAI] タイムアウト開始: 60秒後に生成中状態を解除します');
+    const timeout = setTimeout(() => {
+      console.log('[SlideAI] タイムアウト発火: 生成中状態を解除');
+      // インターバルもクリア
+      if (popupCheckIntervalRef.current) {
+        clearInterval(popupCheckIntervalRef.current);
+        popupCheckIntervalRef.current = null;
+      }
+      setIsGeneratingSlide(false);
+      popupRef.current = null;
+    }, 60000);
+
+    return () => {
+      console.log('[SlideAI] タイムアウトクリア');
+      clearTimeout(timeout);
+      // インターバルもクリア
+      if (popupCheckIntervalRef.current) {
+        clearInterval(popupCheckIntervalRef.current);
+        popupCheckIntervalRef.current = null;
+      }
+    };
+  }, [isGeneratingSlide]);
+
   const handleGenerateSlide = async () => {
     if (messages.length === 0) return;
 
@@ -283,26 +311,23 @@ export default function HomePage() {
         document.body.removeChild(form);
 
         // ポップアップの状態を監視（閉じられたら生成中を解除）
-        const checkPopupInterval = setInterval(() => {
+        popupCheckIntervalRef.current = setInterval(() => {
           try {
             // Cross-origin制限でclosedにアクセスできない場合もある
             if (!popupRef.current || popupRef.current.closed) {
-              clearInterval(checkPopupInterval);
+              console.log('[SlideAI] ポップアップが閉じられました');
+              if (popupCheckIntervalRef.current) {
+                clearInterval(popupCheckIntervalRef.current);
+                popupCheckIntervalRef.current = null;
+              }
               setIsGeneratingSlide(false);
               popupRef.current = null;
             }
           } catch (e) {
             // アクセスエラーの場合はポップアップが別ドメインにリダイレクトされた
-            // タイムアウトで解除されるのを待つ
+            // useEffectのタイムアウトで解除されるのを待つ
           }
         }, 500);
-
-        // タイムアウト（60秒後に強制解除）
-        setTimeout(() => {
-          clearInterval(checkPopupInterval);
-          setIsGeneratingSlide(false);
-          popupRef.current = null;
-        }, 60000);
       } else if (result.success && result.slideUrl) {
         setSlideResult(result as GenerateSlideResponse);
         window.open(result.slideUrl, '_blank');
