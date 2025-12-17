@@ -230,6 +230,7 @@ export default function HomePage() {
 
   // スライド生成中のタイムアウト処理（60秒後に強制解除）
   useEffect(() => {
+    console.log('[SlideAI] useEffect実行: isGeneratingSlide =', isGeneratingSlide);
     if (!isGeneratingSlide) return;
 
     console.log('[SlideAI] タイムアウト開始: 60秒後に生成中状態を解除します');
@@ -256,8 +257,10 @@ export default function HomePage() {
   }, [isGeneratingSlide]);
 
   const handleGenerateSlide = async () => {
+    console.log('[SlideAI] handleGenerateSlide開始');
     if (messages.length === 0) return;
 
+    console.log('[SlideAI] setIsGeneratingSlide(true)を実行');
     setIsGeneratingSlide(true);
     setSlideResult(null);
 
