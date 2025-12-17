@@ -282,7 +282,22 @@ export default function HomePage() {
         form.submit();
         document.body.removeChild(form);
 
-        // 結果はpostMessageで受信（useEffectで処理）
+        // ポップアップの状態を監視（閉じられたら生成中を解除）
+        const checkPopupInterval = setInterval(() => {
+          if (!popupRef.current || popupRef.current.closed) {
+            clearInterval(checkPopupInterval);
+            setIsGeneratingSlide(false);
+            popupRef.current = null;
+          }
+        }, 500);
+
+        // タイムアウト（90秒後に強制解除）
+        setTimeout(() => {
+          clearInterval(checkPopupInterval);
+          if (isGeneratingSlide) {
+            setIsGeneratingSlide(false);
+          }
+        }, 90000);
       } else if (result.success && result.slideUrl) {
         setSlideResult(result as GenerateSlideResponse);
         window.open(result.slideUrl, '_blank');
