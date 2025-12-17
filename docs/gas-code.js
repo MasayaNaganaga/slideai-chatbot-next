@@ -382,24 +382,28 @@ function createStandardSlide(slide, content, index) {
   }
 
   // ハイライト（数値やキーワード）
-  if (content.highlights && content.highlights.length > 0) {
-    const hlCount = Math.max(content.highlights.length, 1);
-    const hlWidth = Math.max((PAGE_WIDTH - 80) / hlCount, 50);
+  if (Array.isArray(content.highlights) && content.highlights.length > 0) {
+    const validHighlights = content.highlights.filter(h => h);
+    if (validHighlights.length > 0) {
+      const hlCount = validHighlights.length;
+      const hlWidth = Math.max((PAGE_WIDTH - 80) / hlCount, 50);
 
-    content.highlights.forEach((hl, i) => {
-      const hlBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE,
-        30 + (i * hlWidth) + 5, currentY, hlWidth - 10, 35);
-      hlBox.getFill().setSolidFill(COLORS.lightGray);
-      hlBox.getBorder().setTransparent();
-      hlBox.getText().setText(hl);
-      hlBox.getText().getTextStyle()
-        .setFontSize(12)
-        .setBold(true)
-        .setForegroundColor(COLORS.navy)
-        .setFontFamily(FONTS.body);
-      hlBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-    });
-    currentY += 45;
+      validHighlights.forEach((hl, i) => {
+        const hlText = String(hl);
+        const hlBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE,
+          30 + (i * hlWidth) + 5, currentY, Math.max(hlWidth - 10, 40), 35);
+        hlBox.getFill().setSolidFill(COLORS.lightGray);
+        hlBox.getBorder().setTransparent();
+        hlBox.getText().setText(hlText);
+        hlBox.getText().getTextStyle()
+          .setFontSize(12)
+          .setBold(true)
+          .setForegroundColor(COLORS.navy)
+          .setFontFamily(FONTS.body);
+        hlBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      });
+      currentY += 45;
+    }
   }
 
   // 箇条書き
@@ -522,6 +526,16 @@ function createColumnContent(slide, column, x, y, width) {
 // ============================================
 
 function createStatsSlide(slide, content, index) {
+  // 最初にstatsデータの有効性をチェック（スライドに何も追加する前に）
+  const stats = Array.isArray(content.stats) ? content.stats.filter(s => s && (s.value || s.label)) : [];
+  const cardCount = Math.min(stats.length, 4);
+
+  // statsが空の場合はstandardスライドとして処理
+  if (cardCount === 0) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
   slide.getBackground().setSolidFill(COLORS.offWhite);
 
   // ヘッダー
@@ -555,17 +569,7 @@ function createStatsSlide(slide, content, index) {
       .setFontFamily(FONTS.title);
   }
 
-  // 統計カード
-  const stats = content.stats || [];
-  const cardCount = Math.min(stats.length, 4);
-
-  // statsが空の場合はstandardスライドとして処理
-  if (cardCount === 0) {
-    createStandardSlide(slide, content, index);
-    return;
-  }
-
-  const cardWidth = (PAGE_WIDTH - 80) / cardCount;
+  const cardWidth = Math.max((PAGE_WIDTH - 80) / cardCount, 100);
   const cardHeight = 150;
   const startY = 135;
 
@@ -609,14 +613,17 @@ function createStatsSlide(slide, content, index) {
   });
 
   // 補足（箇条書きがあれば下に表示）
-  if (content.bullets && content.bullets.length > 0) {
-    const noteY = startY + cardHeight + 20;
-    const noteText = content.bullets.map(b => `• ${b}`).join('　　');
-    const noteBox = slide.insertTextBox(noteText, 30, noteY, PAGE_WIDTH - 60, 30);
-    noteBox.getText().getTextStyle()
-      .setFontSize(11)
-      .setForegroundColor(COLORS.gray)
-      .setFontFamily(FONTS.body);
+  if (Array.isArray(content.bullets) && content.bullets.length > 0) {
+    const validBullets = content.bullets.filter(b => b);
+    if (validBullets.length > 0) {
+      const noteY = startY + cardHeight + 20;
+      const noteText = validBullets.map(b => `• ${String(b)}`).join('　　');
+      const noteBox = slide.insertTextBox(noteText, 30, noteY, PAGE_WIDTH - 60, 30);
+      noteBox.getText().getTextStyle()
+        .setFontSize(11)
+        .setForegroundColor(COLORS.gray)
+        .setFontFamily(FONTS.body);
+    }
   }
 }
 
