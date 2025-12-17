@@ -841,19 +841,20 @@ function createHtmlResponse(success, error, slideUrl) {
   const closeScript = `
     function closeWindow() {
       // 親ウィンドウに閉じるリクエストを送信
-      if (window.opener) {
-        window.opener.postMessage({ type: 'closePopup' }, '*');
-      }
+      try {
+        if (window.opener) {
+          window.opener.postMessage({ type: 'closePopup' }, '*');
+        }
+      } catch(e) {}
       // 閉じる試み
-      window.close();
-      // 少し待ってからもう一度試す
+      try { window.close(); } catch(e) {}
+      // メッセージを表示（閉じられなかった場合に見える）
       setTimeout(function() {
-        window.open('about:blank', '_self').close();
-      }, 50);
-      // それでも閉じない場合
-      setTimeout(function() {
-        document.querySelector('.container').innerHTML = '<div class="success">✓</div><h1>完了</h1><p style="font-size:16px;">右上の×ボタンでこのタブを閉じてください</p>';
-      }, 200);
+        var container = document.querySelector('.container');
+        if (container) {
+          container.innerHTML = '<div style="color:#38a169;font-size:60px;margin-bottom:20px;">✓</div><h1 style="color:#1a365d;margin-bottom:10px;font-size:24px;">完了</h1><p style="color:#718096;font-size:16px;">右上の×ボタンでこのタブを閉じてください</p>';
+        }
+      }, 300);
     }
   `;
 
@@ -861,7 +862,7 @@ function createHtmlResponse(success, error, slideUrl) {
   if (success && slideUrl) {
     html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SlideAI</title>
 <style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:linear-gradient(135deg,#1a365d,#2c5282)}.container{text-align:center;background:white;padding:50px;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}.success{color:#38a169;font-size:60px;margin-bottom:20px}h1{color:#1a365d;margin-bottom:10px;font-size:24px}p{color:#718096;margin-bottom:25px}a{display:inline-block;background:linear-gradient(135deg,#3182ce,#2c5282);color:white;padding:15px 35px;border-radius:10px;text-decoration:none;font-weight:bold;transition:transform 0.2s}a:hover{transform:scale(1.05)}.close{margin-top:25px;color:#a0aec0;cursor:pointer;font-size:14px;text-decoration:underline}</style></head>
-<body><div class="container"><div class="success">✓</div><h1>スライド生成完了</h1><p>プレゼンテーションが作成されました</p><a href="${slideUrl}" target="_blank" onclick="setTimeout(closeWindow,500)">スライドを開く</a><p class="close" onclick="closeWindow()">このウィンドウを閉じる</p></div>
+<body><div class="container"><div class="success">✓</div><h1>スライド生成完了</h1><p>プレゼンテーションが作成されました</p><a href="${slideUrl}" target="_blank">スライドを開く</a><p class="close" onclick="closeWindow()">このウィンドウを閉じる</p></div>
 <script>${closeScript}if(window.opener){window.opener.postMessage({type:'slideGenerated',success:true,slideUrl:'${slideUrl}'},'*')}</script></body></html>`;
   } else {
     html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SlideAI - Error</title>

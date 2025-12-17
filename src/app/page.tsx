@@ -284,20 +284,25 @@ export default function HomePage() {
 
         // ポップアップの状態を監視（閉じられたら生成中を解除）
         const checkPopupInterval = setInterval(() => {
-          if (!popupRef.current || popupRef.current.closed) {
-            clearInterval(checkPopupInterval);
-            setIsGeneratingSlide(false);
-            popupRef.current = null;
+          try {
+            // Cross-origin制限でclosedにアクセスできない場合もある
+            if (!popupRef.current || popupRef.current.closed) {
+              clearInterval(checkPopupInterval);
+              setIsGeneratingSlide(false);
+              popupRef.current = null;
+            }
+          } catch (e) {
+            // アクセスエラーの場合はポップアップが別ドメインにリダイレクトされた
+            // タイムアウトで解除されるのを待つ
           }
         }, 500);
 
-        // タイムアウト（90秒後に強制解除）
+        // タイムアウト（60秒後に強制解除）
         setTimeout(() => {
           clearInterval(checkPopupInterval);
-          if (isGeneratingSlide) {
-            setIsGeneratingSlide(false);
-          }
-        }, 90000);
+          setIsGeneratingSlide(false);
+          popupRef.current = null;
+        }, 60000);
       } else if (result.success && result.slideUrl) {
         setSlideResult(result as GenerateSlideResponse);
         window.open(result.slideUrl, '_blank');
