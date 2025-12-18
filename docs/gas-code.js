@@ -244,7 +244,42 @@ function detectBestLayout(content) {
   // 左右に分けるコンテンツがある場合
   if (content.leftColumn || content.rightColumn) {
     return 'twoColumn';
-}  // タイムラインデータがある場合  if (content.timeline && Array.isArray(content.timeline) && content.timeline.length > 0) {    return 'timeline';  }  // サイクルデータがある場合  if (content.cycle && Array.isArray(content.cycle) && content.cycle.length > 0) {    return 'cycle';  }  // ファネルデータがある場合  if (content.funnel && Array.isArray(content.funnel) && content.funnel.length > 0) {    return 'funnel';  }  // テーブルデータがある場合  if (content.tableData && content.tableData.headers && content.tableData.rows) {    return 'table';  }  // グリッドデータがある場合  if (content.grid && Array.isArray(content.grid) && content.grid.length > 0) {    return 'grid';  }  // ベン図データがある場合  if (content.venn && (content.venn.left || content.venn.right)) {    return 'venn';  }  // ツリーデータがある場合  if (content.tree && content.tree.title) {    return 'tree';  }  // Q&Aデータがある場合  if (content.qaItems && Array.isArray(content.qaItems) && content.qaItems.length > 0) {    return 'qa';  }  // 事例紹介データがある場合  if (content.caseStudy && (content.caseStudy.challenge || content.caseStudy.solution)) {    return 'caseStudy';
+  }
+  // タイムラインデータがある場合
+  if (content.timeline && Array.isArray(content.timeline) && content.timeline.length > 0) {
+    return 'timeline';
+  }
+  // サイクルデータがある場合
+  if (content.cycle && Array.isArray(content.cycle) && content.cycle.length > 0) {
+    return 'cycle';
+  }
+  // ファネルデータがある場合
+  if (content.funnel && Array.isArray(content.funnel) && content.funnel.length > 0) {
+    return 'funnel';
+  }
+  // テーブルデータがある場合
+  if (content.tableData && content.tableData.headers && content.tableData.rows) {
+    return 'table';
+  }
+  // グリッドデータがある場合
+  if (content.grid && Array.isArray(content.grid) && content.grid.length > 0) {
+    return 'grid';
+  }
+  // ベン図データがある場合
+  if (content.venn && (content.venn.left || content.venn.right)) {
+    return 'venn';
+  }
+  // ツリーデータがある場合
+  if (content.tree && content.tree.title) {
+    return 'tree';
+  }
+  // Q&Aデータがある場合
+  if (content.qaItems && Array.isArray(content.qaItems) && content.qaItems.length > 0) {
+    return 'qa';
+  }
+  // 事例紹介データがある場合
+  if (content.caseStudy && (content.caseStudy.challenge || content.caseStudy.solution)) {
+    return 'caseStudy';
   }
   return 'standard';
 }
