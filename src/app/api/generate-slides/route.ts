@@ -159,6 +159,173 @@ Before/After、比較を示す
   ]
 }
 
+### 12. timeline
+タイムライン・スケジュール。時系列の予定や実績を示す時に使用
+{
+  "layout": "timeline",
+  "title": "プロジェクトタイムライン",
+  "timeline": [
+    { "date": "2024年4月", "title": "フェーズ1", "description": "要件定義・基本設計" },
+    { "date": "2024年6月", "title": "フェーズ2", "description": "開発・テスト" },
+    { "date": "2024年8月", "title": "フェーズ3", "description": "本番リリース" },
+    { "date": "2024年10月", "title": "フェーズ4", "description": "運用・改善" }
+  ]
+}
+
+### 13. cycle
+サイクル図。PDCAや循環プロセスを示す時に使用（3-5ステップ）
+{
+  "layout": "cycle",
+  "title": "PDCAサイクル",
+  "cycle": [
+    { "title": "Plan", "description": "計画を立てる" },
+    { "title": "Do", "description": "実行する" },
+    { "title": "Check", "description": "評価する" },
+    { "title": "Act", "description": "改善する" }
+  ]
+}
+
+### 14. funnel
+ファネル図。顧客行動や変換率など、絞り込みプロセスを示す時に使用
+{
+  "layout": "funnel",
+  "title": "カスタマージャーニー",
+  "funnel": [
+    { "title": "認知", "value": "10,000人", "description": "広告接触" },
+    { "title": "興味", "value": "3,000人", "description": "サイト訪問" },
+    { "title": "検討", "value": "800人", "description": "資料請求" },
+    { "title": "購入", "value": "200人", "description": "成約" }
+  ]
+}
+
+### 15. table
+表形式。複数項目の比較や詳細データを示す時に使用
+{
+  "layout": "table",
+  "title": "プラン比較",
+  "tableData": {
+    "headers": ["項目", "A案", "B案", "C案"],
+    "rows": [
+      ["価格", "100万円", "150万円", "200万円"],
+      ["納期", "3ヶ月", "2ヶ月", "1.5ヶ月"],
+      ["品質", "標準", "高品質", "最高品質"],
+      ["保守", "1年", "2年", "3年"]
+    ]
+  }
+}
+
+### 16. verticalFlow
+縦型フロー。段階的なプロセスや階層的な流れを示す時に使用
+{
+  "layout": "verticalFlow",
+  "title": "導入ステップ",
+  "flow": [
+    { "title": "Step 1: ヒアリング", "description": "現状分析と課題抽出" },
+    { "title": "Step 2: 提案", "description": "最適なソリューション提案" },
+    { "title": "Step 3: 導入", "description": "システム構築と設定" },
+    { "title": "Step 4: 運用", "description": "定着支援とサポート" }
+  ]
+}
+
+### 17. grid
+グリッド形式。複数の要素を均等に配置する時に使用（4-9個）
+{
+  "layout": "grid",
+  "title": "サービスの特徴",
+  "grid": [
+    { "icon": "🎯", "title": "高精度", "description": "AIによる高精度な分析" },
+    { "icon": "⚡", "title": "高速処理", "description": "リアルタイム処理に対応" },
+    { "icon": "🔒", "title": "セキュア", "description": "強固なセキュリティ" },
+    { "icon": "💰", "title": "コスト削減", "description": "運用コスト30%削減" },
+    { "icon": "📊", "title": "可視化", "description": "直感的なダッシュボード" },
+    { "icon": "🔧", "title": "カスタマイズ", "description": "柔軟な設定が可能" }
+  ]
+}
+
+### 18. venn
+ベン図。2-3つの要素の重なりや共通点を示す時に使用
+{
+  "layout": "venn",
+  "title": "事業シナジー",
+  "venn": {
+    "left": {
+      "title": "事業A",
+      "items": ["強み1", "強み2", "強み3"]
+    },
+    "right": {
+      "title": "事業B",
+      "items": ["強み1", "強み2", "強み3"]
+    },
+    "center": {
+      "title": "共通価値",
+      "items": ["相乗効果1", "相乗効果2", "相乗効果3"]
+    }
+  }
+}
+
+### 19. tree
+ツリー図。組織図や分類構造を示す時に使用
+{
+  "layout": "tree",
+  "title": "組織構造",
+  "tree": {
+    "title": "CEO",
+    "description": "最高経営責任者",
+    "children": [
+      {
+        "title": "CTO",
+        "description": "技術部門",
+        "children": [
+          { "title": "開発チーム", "description": "製品開発" },
+          { "title": "インフラチーム", "description": "インフラ管理" }
+        ]
+      },
+      {
+        "title": "CFO",
+        "description": "財務部門",
+        "children": [
+          { "title": "経理チーム", "description": "会計処理" },
+          { "title": "財務企画", "description": "予算管理" }
+        ]
+      }
+    ]
+  }
+}
+
+### 20. qa
+Q&A形式。よくある質問と回答を示す時に使用
+{
+  "layout": "qa",
+  "title": "よくある質問",
+  "qaItems": [
+    {
+      "question": "導入までにどのくらい時間がかかりますか？",
+      "answer": "通常、ヒアリングから本稼働まで約2ヶ月程度です。"
+    },
+    {
+      "question": "既存システムとの連携は可能ですか？",
+      "answer": "はい、APIを通じて既存システムとの連携が可能です。"
+    },
+    {
+      "question": "サポート体制はどうなっていますか？",
+      "answer": "平日9:00-18:00のメール・電話サポートを提供しています。"
+    }
+  ]
+}
+
+### 21. caseStudy
+事例紹介。導入事例や成功事例を示す時に使用
+{
+  "layout": "caseStudy",
+  "title": "導入事例",
+  "caseStudy": {
+    "company": "A社（製造業・従業員500名）",
+    "challenge": "在庫管理の非効率により、過剰在庫が発生し、キャッシュフローが悪化していた。",
+    "solution": "AIを活用した需要予測システムを導入し、適正在庫の自動算出を実現。",
+    "result": "在庫コスト30%削減、キャッシュフロー改善により営業利益率が5%向上。"
+  }
+}
+
 ## スライド枚数の決定基準【重要】
 
 会話から得られた発表時間に応じて、必ず以下の枚数を生成してください：
@@ -252,10 +419,20 @@ Before/After、比較を示す
 - 失敗例と成功例の対比
 
 ## レイアウト選択のガイドライン
-- プロセスや手順の説明 → flow
+- プロセスや手順の説明（横の流れ） → flow
+- プロセスや手順の説明（縦の流れ） → verticalFlow
+- 循環プロセス（PDCA等） → cycle
+- タイムライン・スケジュール → timeline
 - 階層構造や成熟度 → pyramid
+- 組織図・分類構造 → tree
 - 優先度や分類マトリクス → matrix
 - 複数の選択肢や役割比較 → parallel
+- 複数要素の均等配置 → grid
+- 2-3要素の重なり・共通点 → venn
+- 顧客行動や絞り込みプロセス → funnel
+- 詳細データの比較 → table
+- よくある質問 → qa
+- 導入事例・成功事例 → caseStudy
 - 数値データの強調 → stats
 - Before/After比較 → comparison
 - 2つの観点の対比 → twoColumn
@@ -271,8 +448,15 @@ Before/After、比較を示す
 - messageフィールドは可能な限り設定（section, quoteは任意）
 - statsレイアウトでは2-4個のstatsを含める
 - flowレイアウトでは3-5ステップを含める
+- verticalFlowレイアウトでは3-5ステップを含める
+- cycleレイアウトでは3-5ステップを含める
 - pyramidレイアウトでは3-5階層を含める
 - parallelレイアウトでは3-4カラムを含める
+- gridレイアウトでは4-9個の要素を含める
+- timelineレイアウトでは3-6個のイベントを含める
+- funnelレイアウトでは3-5段階を含める
+- tableレイアウトでは3-5列、3-6行を目安にする
+- qaレイアウトでは3-5個のQ&Aを含める
 - bulletsは3-7個を目安に充実させる
 - 会話から読み取れる情報を最大限活用する
 - 情報が不足している部分は一般知識で補完して具体的な内容を入れる

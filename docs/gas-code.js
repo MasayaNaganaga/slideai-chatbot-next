@@ -156,6 +156,36 @@ function createPresentation(slideData) {
       case 'parallel':
         createParallelSlide(slide, content, index);
         break;
+      case 'timeline':
+        createTimelineSlide(slide, content, index);
+        break;
+      case 'cycle':
+        createCycleSlide(slide, content, index);
+        break;
+      case 'funnel':
+        createFunnelSlide(slide, content, index);
+        break;
+      case 'table':
+        createTableSlide(slide, content, index);
+        break;
+      case 'verticalFlow':
+        createVerticalFlowSlide(slide, content, index);
+        break;
+      case 'grid':
+        createGridSlide(slide, content, index);
+        break;
+      case 'venn':
+        createVennSlide(slide, content, index);
+        break;
+      case 'tree':
+        createTreeSlide(slide, content, index);
+        break;
+      case 'qa':
+        createQASlide(slide, content, index);
+        break;
+      case 'caseStudy':
+        createCaseStudySlide(slide, content, index);
+        break;
       default:
         createStandardSlide(slide, content, index);
     }
@@ -214,6 +244,7 @@ function detectBestLayout(content) {
   // 左右に分けるコンテンツがある場合
   if (content.leftColumn || content.rightColumn) {
     return 'twoColumn';
+}  // タイムラインデータがある場合  if (content.timeline && Array.isArray(content.timeline) && content.timeline.length > 0) {    return 'timeline';  }  // サイクルデータがある場合  if (content.cycle && Array.isArray(content.cycle) && content.cycle.length > 0) {    return 'cycle';  }  // ファネルデータがある場合  if (content.funnel && Array.isArray(content.funnel) && content.funnel.length > 0) {    return 'funnel';  }  // テーブルデータがある場合  if (content.tableData && content.tableData.headers && content.tableData.rows) {    return 'table';  }  // グリッドデータがある場合  if (content.grid && Array.isArray(content.grid) && content.grid.length > 0) {    return 'grid';  }  // ベン図データがある場合  if (content.venn && (content.venn.left || content.venn.right)) {    return 'venn';  }  // ツリーデータがある場合  if (content.tree && content.tree.title) {    return 'tree';  }  // Q&Aデータがある場合  if (content.qaItems && Array.isArray(content.qaItems) && content.qaItems.length > 0) {    return 'qa';  }  // 事例紹介データがある場合  if (content.caseStudy && (content.caseStudy.challenge || content.caseStudy.solution)) {    return 'caseStudy';
   }
   return 'standard';
 }
@@ -1469,6 +1500,999 @@ function createParallelSlide(slide, content, index) {
 }
 
 // ============================================
+
+// ============================================
+// タイムラインスライド
+// ============================================
+
+function createTimelineSlide(slide, content, index) {
+  const timelineItems = Array.isArray(content.timeline) ? content.timeline.filter(t => t && t.title) : [];
+
+  if (timelineItems.length === 0) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
+  const HEADER_HEIGHT = 55;
+  const CONTENT_PADDING = 20;
+  const BOTTOM_MARGIN = 15;
+
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  const titleBox = slide.insertTextBox(content.title || '', CONTENT_PADDING, 12, PAGE_WIDTH - 90, 32);
+  titleBox.getText().getTextStyle()
+    .setFontSize(18)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
+  numBg.getFill().setSolidFill(COLORS.blue);
+  numBg.getBorder().setTransparent();
+  numBg.getText().setText(String(index + 1));
+  numBg.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor(COLORS.white);
+  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // タイムライン
+  const itemCount = Math.min(timelineItems.length, 6);
+  const startY = HEADER_HEIGHT + 30;
+  const lineY = startY + 30;
+  const itemWidth = (PAGE_WIDTH - CONTENT_PADDING * 2) / itemCount;
+
+  // 横線
+  const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, CONTENT_PADDING, lineY, PAGE_WIDTH - CONTENT_PADDING * 2, 3);
+  line.getFill().setSolidFill(COLORS.lightGray);
+  line.getBorder().setTransparent();
+
+  const itemColors = ['#337ab7', '#4a8bc2', '#6ba3d6', '#8dbde8', '#afd4f2', '#c5e1f7'];
+
+  timelineItems.slice(0, 6).forEach((item, i) => {
+    const x = CONTENT_PADDING + (i * itemWidth) + itemWidth / 2;
+
+    // ドット
+    const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x - 8, lineY - 6, 16, 16);
+    dot.getFill().setSolidFill(itemColors[i % itemColors.length]);
+    dot.getBorder().setTransparent();
+
+    // 日付
+    if (item.date) {
+      const dateBox = slide.insertTextBox(item.date, x - itemWidth / 2 + 5, startY, itemWidth - 10, 22);
+      dateBox.getText().getTextStyle()
+        .setFontSize(10)
+        .setBold(true)
+        .setForegroundColor(itemColors[i % itemColors.length])
+        .setFontFamily(FONTS.accent);
+      dateBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    }
+
+    // タイトル
+    const titleY = lineY + 20;
+    const itemTitle = slide.insertTextBox(item.title, x - itemWidth / 2 + 5, titleY, itemWidth - 10, 28);
+    itemTitle.getText().getTextStyle()
+      .setFontSize(11)
+      .setBold(true)
+      .setForegroundColor(COLORS.navy)
+      .setFontFamily(FONTS.title);
+    itemTitle.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    // 説明
+    if (item.description) {
+      const descBox = slide.insertTextBox(item.description, x - itemWidth / 2 + 5, titleY + 30, itemWidth - 10, PAGE_HEIGHT - titleY - 45);
+      descBox.getText().getTextStyle()
+        .setFontSize(9)
+        .setForegroundColor(COLORS.darkGray)
+        .setFontFamily(FONTS.body);
+      descBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    }
+  });
+
+  // サイドバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// サイクルスライド（円形）
+// ============================================
+
+function createCycleSlide(slide, content, index) {
+  const cycleItems = Array.isArray(content.cycle) ? content.cycle.filter(c => c && c.title) : [];
+
+  if (cycleItems.length === 0) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
+  const HEADER_HEIGHT = 55;
+  const CONTENT_PADDING = 20;
+
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  const titleBox = slide.insertTextBox(content.title || '', CONTENT_PADDING, 12, PAGE_WIDTH - 90, 32);
+  titleBox.getText().getTextStyle()
+    .setFontSize(18)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
+  numBg.getFill().setSolidFill(COLORS.blue);
+  numBg.getBorder().setTransparent();
+  numBg.getText().setText(String(index + 1));
+  numBg.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor(COLORS.white);
+  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // サイクル図
+  const itemCount = Math.min(cycleItems.length, 6);
+  const centerX = PAGE_WIDTH / 2;
+  const centerY = (PAGE_HEIGHT + HEADER_HEIGHT) / 2 + 10;
+  const radius = 120;
+  const itemSize = 80;
+
+  const itemColors = ['#337ab7', '#4a8bc2', '#6ba3d6', '#8dbde8', '#28a745', '#f5a623'];
+
+  // 中央の円
+  const centerCircle = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, centerX - 35, centerY - 35, 70, 70);
+  centerCircle.getFill().setSolidFill(COLORS.navy);
+  centerCircle.getBorder().setTransparent();
+
+  cycleItems.slice(0, 6).forEach((item, i) => {
+    const angle = (i * 2 * Math.PI / itemCount) - Math.PI / 2;
+    const x = centerX + radius * Math.cos(angle) - itemSize / 2;
+    const y = centerY + radius * Math.sin(angle) - itemSize / 2;
+
+    // アイテムボックス
+    const itemBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, itemSize, itemSize);
+    itemBox.getFill().setSolidFill(itemColors[i % itemColors.length]);
+    itemBox.getBorder().setTransparent();
+
+    // タイトル
+    const itemTitle = slide.insertTextBox(item.title, x + 5, y + 15, itemSize - 10, 25);
+    itemTitle.getText().getTextStyle()
+      .setFontSize(10)
+      .setBold(true)
+      .setForegroundColor(COLORS.white)
+      .setFontFamily(FONTS.title);
+    itemTitle.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    // 説明
+    if (item.description) {
+      const descBox = slide.insertTextBox(item.description, x + 5, y + 42, itemSize - 10, 35);
+      descBox.getText().getTextStyle()
+        .setFontSize(8)
+        .setForegroundColor(COLORS.white)
+        .setFontFamily(FONTS.body);
+      descBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    }
+
+    // 矢印（最後以外）
+    if (i < itemCount) {
+      const nextAngle = ((i + 1) * 2 * Math.PI / itemCount) - Math.PI / 2;
+      const arrowAngle = (angle + nextAngle) / 2;
+      const arrowX = centerX + (radius - 35) * Math.cos(arrowAngle);
+      const arrowY = centerY + (radius - 35) * Math.sin(arrowAngle);
+      const arrow = slide.insertTextBox('→', arrowX - 10, arrowY - 10, 20, 20);
+      arrow.getText().getTextStyle()
+        .setFontSize(14)
+        .setBold(true)
+        .setForegroundColor(COLORS.gray);
+    }
+  });
+
+  // サイドバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// ファネルスライド
+// ============================================
+
+function createFunnelSlide(slide, content, index) {
+  const funnelSteps = Array.isArray(content.funnel) ? content.funnel.filter(f => f && f.title) : [];
+
+  if (funnelSteps.length === 0) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
+  const HEADER_HEIGHT = 55;
+  const CONTENT_PADDING = 25;
+  const BOTTOM_MARGIN = 15;
+
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  const titleBox = slide.insertTextBox(content.title || '', CONTENT_PADDING, 12, PAGE_WIDTH - 90, 32);
+  titleBox.getText().getTextStyle()
+    .setFontSize(18)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
+  numBg.getFill().setSolidFill(COLORS.blue);
+  numBg.getBorder().setTransparent();
+  numBg.getText().setText(String(index + 1));
+  numBg.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor(COLORS.white);
+  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // ファネル
+  const stepCount = Math.min(funnelSteps.length, 5);
+  const startY = HEADER_HEIGHT + 15;
+  const funnelHeight = PAGE_HEIGHT - startY - BOTTOM_MARGIN;
+  const stepHeight = funnelHeight / stepCount;
+  const maxWidth = 500;
+  const minWidth = 150;
+  const centerX = PAGE_WIDTH / 2;
+
+  const stepColors = ['#337ab7', '#4a8bc2', '#6ba3d6', '#8dbde8', '#afd4f2'];
+
+  funnelSteps.slice(0, 5).forEach((step, i) => {
+    const widthRatio = 1 - (i * 0.18);
+    const width = maxWidth * widthRatio;
+    const x = centerX - width / 2;
+    const y = startY + (i * stepHeight);
+
+    // ステップボックス
+    const stepBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, width, stepHeight - 3);
+    stepBox.getFill().setSolidFill(stepColors[i % stepColors.length]);
+    stepBox.getBorder().setTransparent();
+
+    // タイトルと値
+    let displayText = step.title;
+    if (step.value) {
+      displayText += '\n' + step.value;
+    }
+    const textBox = slide.insertTextBox(displayText, x + 10, y + 8, width - 20, stepHeight - 20);
+    textBox.getText().getTextStyle()
+      .setFontSize(12)
+      .setBold(true)
+      .setForegroundColor(COLORS.white)
+      .setFontFamily(FONTS.title);
+    textBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  });
+
+  // サイドバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// テーブルスライド
+// ============================================
+
+function createTableSlide(slide, content, index) {
+  const tableData = content.tableData;
+
+  if (!tableData || !tableData.headers || !tableData.rows) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
+  const HEADER_HEIGHT = 55;
+  const CONTENT_PADDING = 20;
+  const BOTTOM_MARGIN = 15;
+
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  const titleBox = slide.insertTextBox(content.title || '', CONTENT_PADDING, 12, PAGE_WIDTH - 90, 32);
+  titleBox.getText().getTextStyle()
+    .setFontSize(18)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
+  numBg.getFill().setSolidFill(COLORS.blue);
+  numBg.getBorder().setTransparent();
+  numBg.getText().setText(String(index + 1));
+  numBg.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor(COLORS.white);
+  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // テーブル
+  const startY = HEADER_HEIGHT + 15;
+  const tableHeight = PAGE_HEIGHT - startY - BOTTOM_MARGIN;
+  const colCount = Math.min(tableData.headers.length, 6);
+  const rowCount = Math.min(tableData.rows.length + 1, 8);
+  const colWidth = (PAGE_WIDTH - CONTENT_PADDING * 2) / colCount;
+  const rowHeight = tableHeight / rowCount;
+
+  // ヘッダー行
+  tableData.headers.slice(0, colCount).forEach((headerText, i) => {
+    const x = CONTENT_PADDING + (i * colWidth);
+    const cell = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, startY, colWidth - 2, rowHeight - 2);
+    cell.getFill().setSolidFill(COLORS.navy);
+    cell.getBorder().setTransparent();
+
+    const cellText = slide.insertTextBox(headerText, x + 5, startY + 5, colWidth - 12, rowHeight - 12);
+    cellText.getText().getTextStyle()
+      .setFontSize(10)
+      .setBold(true)
+      .setForegroundColor(COLORS.white)
+      .setFontFamily(FONTS.title);
+    cellText.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  });
+
+  // データ行
+  tableData.rows.slice(0, rowCount - 1).forEach((row, rowIndex) => {
+    const y = startY + ((rowIndex + 1) * rowHeight);
+    const bgColor = rowIndex % 2 === 0 ? COLORS.offWhite : COLORS.white;
+
+    row.slice(0, colCount).forEach((cellValue, colIndex) => {
+      const x = CONTENT_PADDING + (colIndex * colWidth);
+      const cell = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, colWidth - 2, rowHeight - 2);
+      cell.getFill().setSolidFill(bgColor);
+      cell.getBorder().setTransparent();
+
+      const cellText = slide.insertTextBox(cellValue || '', x + 5, y + 5, colWidth - 12, rowHeight - 12);
+      cellText.getText().getTextStyle()
+        .setFontSize(10)
+        .setForegroundColor(COLORS.darkGray)
+        .setFontFamily(FONTS.body);
+      cellText.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    });
+  });
+
+  // サイドバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// 縦型フロースライド
+// ============================================
+
+function createVerticalFlowSlide(slide, content, index) {
+  const flowSteps = Array.isArray(content.flow) ? content.flow.filter(f => f && f.title) : [];
+
+  if (flowSteps.length === 0) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
+  const HEADER_HEIGHT = 55;
+  const CONTENT_PADDING = 30;
+  const BOTTOM_MARGIN = 15;
+
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  const titleBox = slide.insertTextBox(content.title || '', CONTENT_PADDING, 12, PAGE_WIDTH - 90, 32);
+  titleBox.getText().getTextStyle()
+    .setFontSize(18)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
+  numBg.getFill().setSolidFill(COLORS.blue);
+  numBg.getBorder().setTransparent();
+  numBg.getText().setText(String(index + 1));
+  numBg.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor(COLORS.white);
+  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // 縦型フロー
+  const stepCount = Math.min(flowSteps.length, 6);
+  const startY = HEADER_HEIGHT + 15;
+  const flowHeight = PAGE_HEIGHT - startY - BOTTOM_MARGIN;
+  const stepHeight = (flowHeight - (stepCount - 1) * 15) / stepCount;
+  const stepWidth = 500;
+  const startX = (PAGE_WIDTH - stepWidth) / 2;
+
+  const stepColors = ['#337ab7', '#4a8bc2', '#6ba3d6', '#8dbde8', '#afd4f2', '#c5e1f7'];
+
+  flowSteps.slice(0, 6).forEach((step, i) => {
+    const y = startY + (i * (stepHeight + 15));
+
+    // ステップ番号
+    const numCircle = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, startX - 35, y + stepHeight / 2 - 12, 24, 24);
+    numCircle.getFill().setSolidFill(stepColors[i % stepColors.length]);
+    numCircle.getBorder().setTransparent();
+    numCircle.getText().setText(String(i + 1));
+    numCircle.getText().getTextStyle()
+      .setFontSize(11)
+      .setBold(true)
+      .setForegroundColor(COLORS.white);
+    numCircle.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    // ステップボックス
+    const stepBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, startX, y, stepWidth, stepHeight);
+    stepBox.getFill().setSolidFill(COLORS.offWhite);
+    stepBox.getBorder().setTransparent();
+
+    // タイトル
+    const stepTitle = slide.insertTextBox(step.title, startX + 15, y + 8, stepWidth - 30, 22);
+    stepTitle.getText().getTextStyle()
+      .setFontSize(12)
+      .setBold(true)
+      .setForegroundColor(COLORS.navy)
+      .setFontFamily(FONTS.title);
+
+    // 説明
+    if (step.description) {
+      const descBox = slide.insertTextBox(step.description, startX + 15, y + 32, stepWidth - 30, stepHeight - 40);
+      descBox.getText().getTextStyle()
+        .setFontSize(10)
+        .setForegroundColor(COLORS.darkGray)
+        .setFontFamily(FONTS.body);
+    }
+
+    // 矢印（最後以外）
+    if (i < stepCount - 1) {
+      const arrowY = y + stepHeight + 2;
+      const arrow = slide.insertTextBox('↓', PAGE_WIDTH / 2 - 10, arrowY, 20, 15);
+      arrow.getText().getTextStyle()
+        .setFontSize(12)
+        .setBold(true)
+        .setForegroundColor(COLORS.blue);
+    }
+  });
+
+  // サイドバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// グリッドスライド
+// ============================================
+
+function createGridSlide(slide, content, index) {
+  const gridItems = Array.isArray(content.grid) ? content.grid.filter(g => g && g.title) : [];
+
+  if (gridItems.length === 0) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
+  const HEADER_HEIGHT = 55;
+  const CONTENT_PADDING = 20;
+  const BOTTOM_MARGIN = 15;
+
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  const titleBox = slide.insertTextBox(content.title || '', CONTENT_PADDING, 12, PAGE_WIDTH - 90, 32);
+  titleBox.getText().getTextStyle()
+    .setFontSize(18)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
+  numBg.getFill().setSolidFill(COLORS.blue);
+  numBg.getBorder().setTransparent();
+  numBg.getText().setText(String(index + 1));
+  numBg.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor(COLORS.white);
+  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // グリッド
+  const itemCount = Math.min(gridItems.length, 9);
+  const cols = itemCount <= 3 ? itemCount : (itemCount <= 6 ? 3 : 3);
+  const rows = Math.ceil(itemCount / cols);
+  const startY = HEADER_HEIGHT + 15;
+  const gridHeight = PAGE_HEIGHT - startY - BOTTOM_MARGIN;
+  const cellWidth = (PAGE_WIDTH - CONTENT_PADDING * 2 - (cols - 1) * 10) / cols;
+  const cellHeight = (gridHeight - (rows - 1) * 10) / rows;
+
+  const itemColors = ['#337ab7', '#4a8bc2', '#6ba3d6', '#28a745', '#f5a623', '#dc3545', '#8dbde8', '#6c757d', '#17a2b8'];
+
+  gridItems.slice(0, 9).forEach((item, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = CONTENT_PADDING + col * (cellWidth + 10);
+    const y = startY + row * (cellHeight + 10);
+
+    // セル背景
+    const cell = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, y, cellWidth, cellHeight);
+    cell.getFill().setSolidFill(COLORS.offWhite);
+    cell.getBorder().setTransparent();
+
+    // 上部カラーバー
+    const colorBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x, y, cellWidth, 4);
+    colorBar.getFill().setSolidFill(itemColors[i % itemColors.length]);
+    colorBar.getBorder().setTransparent();
+
+    let currentY = y + 12;
+
+    // アイコン
+    if (item.icon) {
+      const iconBox = slide.insertTextBox(item.icon, x + cellWidth / 2 - 15, currentY, 30, 30);
+      iconBox.getText().getTextStyle()
+        .setFontSize(22)
+        .setForegroundColor(itemColors[i % itemColors.length]);
+      iconBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      currentY += 35;
+    }
+
+    // タイトル
+    const itemTitle = slide.insertTextBox(item.title, x + 8, currentY, cellWidth - 16, 25);
+    itemTitle.getText().getTextStyle()
+      .setFontSize(11)
+      .setBold(true)
+      .setForegroundColor(COLORS.navy)
+      .setFontFamily(FONTS.title);
+    itemTitle.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    currentY += 28;
+
+    // 説明
+    if (item.description) {
+      const descBox = slide.insertTextBox(item.description, x + 8, currentY, cellWidth - 16, cellHeight - currentY + y - 10);
+      descBox.getText().getTextStyle()
+        .setFontSize(9)
+        .setForegroundColor(COLORS.darkGray)
+        .setFontFamily(FONTS.body);
+      descBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    }
+  });
+
+  // サイドバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// ベン図スライド
+// ============================================
+
+function createVennSlide(slide, content, index) {
+  const venn = content.venn;
+
+  if (!venn || (!venn.left && !venn.right)) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
+  const HEADER_HEIGHT = 55;
+  const CONTENT_PADDING = 20;
+
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  const titleBox = slide.insertTextBox(content.title || '', CONTENT_PADDING, 12, PAGE_WIDTH - 90, 32);
+  titleBox.getText().getTextStyle()
+    .setFontSize(18)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
+  numBg.getFill().setSolidFill(COLORS.blue);
+  numBg.getBorder().setTransparent();
+  numBg.getText().setText(String(index + 1));
+  numBg.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor(COLORS.white);
+  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // ベン図
+  const centerY = (PAGE_HEIGHT + HEADER_HEIGHT) / 2;
+  const circleSize = 200;
+  const overlap = 60;
+
+  // 左の円
+  const leftCircle = slide.insertShape(SlidesApp.ShapeType.ELLIPSE,
+    PAGE_WIDTH / 2 - circleSize + overlap / 2, centerY - circleSize / 2, circleSize, circleSize);
+  leftCircle.getFill().setSolidFill('#337ab7');
+  leftCircle.getBorder().setTransparent();
+  leftCircle.setContentAlignment(SlidesApp.ContentAlignment.TOP);
+
+  // 右の円
+  const rightCircle = slide.insertShape(SlidesApp.ShapeType.ELLIPSE,
+    PAGE_WIDTH / 2 - overlap / 2, centerY - circleSize / 2, circleSize, circleSize);
+  rightCircle.getFill().setSolidFill('#28a745');
+  rightCircle.getBorder().setTransparent();
+
+  // 左のラベル
+  if (venn.left && venn.left.title) {
+    const leftLabel = slide.insertTextBox(venn.left.title, PAGE_WIDTH / 2 - circleSize + overlap / 2, centerY - 50, circleSize - overlap, 30);
+    leftLabel.getText().getTextStyle()
+      .setFontSize(12)
+      .setBold(true)
+      .setForegroundColor(COLORS.white)
+      .setFontFamily(FONTS.title);
+    leftLabel.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    if (venn.left.items && venn.left.items.length > 0) {
+      const leftItems = slide.insertTextBox(venn.left.items.slice(0, 3).join('\n'),
+        PAGE_WIDTH / 2 - circleSize + overlap / 2 + 10, centerY - 15, circleSize - overlap - 20, 80);
+      leftItems.getText().getTextStyle()
+        .setFontSize(9)
+        .setForegroundColor(COLORS.white)
+        .setFontFamily(FONTS.body);
+      leftItems.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    }
+  }
+
+  // 右のラベル
+  if (venn.right && venn.right.title) {
+    const rightLabel = slide.insertTextBox(venn.right.title, PAGE_WIDTH / 2 + overlap / 2, centerY - 50, circleSize - overlap, 30);
+    rightLabel.getText().getTextStyle()
+      .setFontSize(12)
+      .setBold(true)
+      .setForegroundColor(COLORS.white)
+      .setFontFamily(FONTS.title);
+    rightLabel.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    if (venn.right.items && venn.right.items.length > 0) {
+      const rightItems = slide.insertTextBox(venn.right.items.slice(0, 3).join('\n'),
+        PAGE_WIDTH / 2 + overlap / 2 + 10, centerY - 15, circleSize - overlap - 20, 80);
+      rightItems.getText().getTextStyle()
+        .setFontSize(9)
+        .setForegroundColor(COLORS.white)
+        .setFontFamily(FONTS.body);
+      rightItems.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    }
+  }
+
+  // 中央（共通部分）
+  if (venn.center && venn.center.title) {
+    const centerLabel = slide.insertTextBox(venn.center.title, PAGE_WIDTH / 2 - 40, centerY - 40, 80, 25);
+    centerLabel.getText().getTextStyle()
+      .setFontSize(10)
+      .setBold(true)
+      .setForegroundColor(COLORS.navy)
+      .setFontFamily(FONTS.title);
+    centerLabel.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    if (venn.center.items && venn.center.items.length > 0) {
+      const centerItems = slide.insertTextBox(venn.center.items.slice(0, 2).join('\n'),
+        PAGE_WIDTH / 2 - 40, centerY - 10, 80, 50);
+      centerItems.getText().getTextStyle()
+        .setFontSize(8)
+        .setForegroundColor(COLORS.navy)
+        .setFontFamily(FONTS.body);
+      centerItems.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+    }
+  }
+
+  // サイドバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// ツリー図スライド
+// ============================================
+
+function createTreeSlide(slide, content, index) {
+  const tree = content.tree;
+
+  if (!tree || !tree.title) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
+  const HEADER_HEIGHT = 55;
+  const CONTENT_PADDING = 20;
+
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  const titleBox = slide.insertTextBox(content.title || '', CONTENT_PADDING, 12, PAGE_WIDTH - 90, 32);
+  titleBox.getText().getTextStyle()
+    .setFontSize(18)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
+  numBg.getFill().setSolidFill(COLORS.blue);
+  numBg.getBorder().setTransparent();
+  numBg.getText().setText(String(index + 1));
+  numBg.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor(COLORS.white);
+  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // ツリー図（シンプルな2階層）
+  const startY = HEADER_HEIGHT + 30;
+  const rootWidth = 150;
+  const rootHeight = 45;
+  const rootX = PAGE_WIDTH / 2 - rootWidth / 2;
+
+  // ルートノード
+  const rootBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, rootX, startY, rootWidth, rootHeight);
+  rootBox.getFill().setSolidFill(COLORS.navy);
+  rootBox.getBorder().setTransparent();
+
+  const rootText = slide.insertTextBox(tree.title, rootX + 10, startY + 10, rootWidth - 20, rootHeight - 20);
+  rootText.getText().getTextStyle()
+    .setFontSize(12)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+  rootText.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // 子ノード
+  if (tree.children && Array.isArray(tree.children) && tree.children.length > 0) {
+    const childCount = Math.min(tree.children.length, 5);
+    const childWidth = 120;
+    const childHeight = 40;
+    const childY = startY + rootHeight + 50;
+    const totalWidth = childCount * childWidth + (childCount - 1) * 15;
+    const startX = PAGE_WIDTH / 2 - totalWidth / 2;
+
+    const childColors = ['#337ab7', '#4a8bc2', '#6ba3d6', '#8dbde8', '#afd4f2'];
+
+    // 接続線（縦）
+    const lineV = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, PAGE_WIDTH / 2 - 1, startY + rootHeight, 2, 25);
+    lineV.getFill().setSolidFill(COLORS.gray);
+    lineV.getBorder().setTransparent();
+
+    // 接続線（横）
+    const lineH = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, startX + childWidth / 2, startY + rootHeight + 25, totalWidth - childWidth, 2);
+    lineH.getFill().setSolidFill(COLORS.gray);
+    lineH.getBorder().setTransparent();
+
+    tree.children.slice(0, 5).forEach((child, i) => {
+      const x = startX + i * (childWidth + 15);
+
+      // 接続線（縦）
+      const lineVC = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, x + childWidth / 2 - 1, startY + rootHeight + 25, 2, 25);
+      lineVC.getFill().setSolidFill(COLORS.gray);
+      lineVC.getBorder().setTransparent();
+
+      // 子ノード
+      const childBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, childY, childWidth, childHeight);
+      childBox.getFill().setSolidFill(childColors[i % childColors.length]);
+      childBox.getBorder().setTransparent();
+
+      const childText = slide.insertTextBox(child.title || '', x + 5, childY + 8, childWidth - 10, childHeight - 16);
+      childText.getText().getTextStyle()
+        .setFontSize(10)
+        .setBold(true)
+        .setForegroundColor(COLORS.white)
+        .setFontFamily(FONTS.title);
+      childText.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+      // 孫ノード（あれば）
+      if (child.children && Array.isArray(child.children) && child.children.length > 0) {
+        const grandChildY = childY + childHeight + 30;
+        const gcCount = Math.min(child.children.length, 3);
+        const gcWidth = 90;
+        const gcStartX = x + childWidth / 2 - (gcCount * gcWidth + (gcCount - 1) * 5) / 2;
+
+        child.children.slice(0, 3).forEach((gc, j) => {
+          const gcX = gcStartX + j * (gcWidth + 5);
+          const gcBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, gcX, grandChildY, gcWidth, 30);
+          gcBox.getFill().setSolidFill(COLORS.lightGray);
+          gcBox.getBorder().setTransparent();
+
+          const gcText = slide.insertTextBox(gc.title || '', gcX + 5, grandChildY + 6, gcWidth - 10, 20);
+          gcText.getText().getTextStyle()
+            .setFontSize(8)
+            .setForegroundColor(COLORS.navy)
+            .setFontFamily(FONTS.body);
+          gcText.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+        });
+      }
+    });
+  }
+
+  // サイドバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// Q&Aスライド
+// ============================================
+
+function createQASlide(slide, content, index) {
+  const qaItems = Array.isArray(content.qaItems) ? content.qaItems.filter(q => q && q.question) : [];
+
+  if (qaItems.length === 0) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
+  const HEADER_HEIGHT = 55;
+  const CONTENT_PADDING = 25;
+  const BOTTOM_MARGIN = 15;
+
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  const titleBox = slide.insertTextBox(content.title || 'Q&A', CONTENT_PADDING, 12, PAGE_WIDTH - 90, 32);
+  titleBox.getText().getTextStyle()
+    .setFontSize(18)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
+  numBg.getFill().setSolidFill(COLORS.blue);
+  numBg.getBorder().setTransparent();
+  numBg.getText().setText(String(index + 1));
+  numBg.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor(COLORS.white);
+  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // Q&A
+  const itemCount = Math.min(qaItems.length, 4);
+  const startY = HEADER_HEIGHT + 15;
+  const qaHeight = PAGE_HEIGHT - startY - BOTTOM_MARGIN;
+  const itemHeight = qaHeight / itemCount;
+
+  qaItems.slice(0, 4).forEach((qa, i) => {
+    const y = startY + (i * itemHeight);
+
+    // Q
+    const qLabel = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, CONTENT_PADDING, y + 5, 28, 28);
+    qLabel.getFill().setSolidFill(COLORS.blue);
+    qLabel.getBorder().setTransparent();
+    qLabel.getText().setText('Q');
+    qLabel.getText().getTextStyle()
+      .setFontSize(14)
+      .setBold(true)
+      .setForegroundColor(COLORS.white);
+    qLabel.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    const qText = slide.insertTextBox(qa.question, CONTENT_PADDING + 38, y + 8, PAGE_WIDTH - CONTENT_PADDING * 2 - 45, 25);
+    qText.getText().getTextStyle()
+      .setFontSize(11)
+      .setBold(true)
+      .setForegroundColor(COLORS.navy)
+      .setFontFamily(FONTS.title);
+
+    // A
+    const aLabel = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, CONTENT_PADDING, y + 38, 28, 28);
+    aLabel.getFill().setSolidFill(COLORS.green);
+    aLabel.getBorder().setTransparent();
+    aLabel.getText().setText('A');
+    aLabel.getText().getTextStyle()
+      .setFontSize(14)
+      .setBold(true)
+      .setForegroundColor(COLORS.white);
+    aLabel.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    const aText = slide.insertTextBox(qa.answer || '', CONTENT_PADDING + 38, y + 40, PAGE_WIDTH - CONTENT_PADDING * 2 - 45, itemHeight - 50);
+    aText.getText().getTextStyle()
+      .setFontSize(10)
+      .setForegroundColor(COLORS.darkGray)
+      .setFontFamily(FONTS.body);
+  });
+
+  // サイドバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
+// ============================================
+// 事例紹介スライド
+// ============================================
+
+function createCaseStudySlide(slide, content, index) {
+  const caseStudy = content.caseStudy;
+
+  if (!caseStudy || (!caseStudy.challenge && !caseStudy.solution && !caseStudy.result)) {
+    createStandardSlide(slide, content, index);
+    return;
+  }
+
+  const HEADER_HEIGHT = 55;
+  const CONTENT_PADDING = 20;
+  const BOTTOM_MARGIN = 15;
+
+  slide.getBackground().setSolidFill(COLORS.white);
+
+  // ヘッダー
+  const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
+  header.getFill().setSolidFill(COLORS.navy);
+  header.getBorder().setTransparent();
+
+  let headerTitle = content.title || '事例紹介';
+  if (caseStudy.company) {
+    headerTitle = caseStudy.company + ' - ' + headerTitle;
+  }
+
+  const titleBox = slide.insertTextBox(headerTitle, CONTENT_PADDING, 12, PAGE_WIDTH - 90, 32);
+  titleBox.getText().getTextStyle()
+    .setFontSize(18)
+    .setBold(true)
+    .setForegroundColor(COLORS.white)
+    .setFontFamily(FONTS.title);
+
+  // スライド番号
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
+  numBg.getFill().setSolidFill(COLORS.blue);
+  numBg.getBorder().setTransparent();
+  numBg.getText().setText(String(index + 1));
+  numBg.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor(COLORS.white);
+  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+  // 事例セクション
+  const sections = [
+    { label: '課題', content: caseStudy.challenge, color: COLORS.red },
+    { label: '解決策', content: caseStudy.solution, color: COLORS.blue },
+    { label: '成果', content: caseStudy.result, color: COLORS.green }
+  ].filter(s => s.content);
+
+  const startY = HEADER_HEIGHT + 15;
+  const sectionHeight = (PAGE_HEIGHT - startY - BOTTOM_MARGIN) / sections.length;
+
+  sections.forEach((section, i) => {
+    const y = startY + (i * sectionHeight);
+
+    // ラベル
+    const labelBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, CONTENT_PADDING, y + 5, 60, 28);
+    labelBox.getFill().setSolidFill(section.color);
+    labelBox.getBorder().setTransparent();
+    labelBox.getText().setText(section.label);
+    labelBox.getText().getTextStyle()
+      .setFontSize(11)
+      .setBold(true)
+      .setForegroundColor(COLORS.white);
+    labelBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+
+    // 内容
+    const contentBox = slide.insertTextBox(section.content, CONTENT_PADDING + 75, y + 8, PAGE_WIDTH - CONTENT_PADDING * 2 - 80, sectionHeight - 20);
+    contentBox.getText().getTextStyle()
+      .setFontSize(11)
+      .setForegroundColor(COLORS.darkGray)
+      .setFontFamily(FONTS.body);
+  });
+
+  // サイドバー
+  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
+  sideBar.getFill().setSolidFill(COLORS.blue);
+  sideBar.getBorder().setTransparent();
+}
+
 // レスポンス生成
 // ============================================
 
