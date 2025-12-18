@@ -7,7 +7,11 @@ export type SlideLayout =
   | 'comparison'
   | 'twoColumn'
   | 'quote'
-  | 'summary';
+  | 'summary'
+  | 'flow'
+  | 'pyramid'
+  | 'matrix'
+  | 'parallel';
 
 export interface StatItem {
   value: string;
@@ -23,6 +27,41 @@ export interface ComparisonData {
 
 export interface ColumnData {
   title?: string;
+  bullets?: string[];
+}
+
+// flow layout
+export interface FlowStep {
+  title: string;
+  description?: string;
+}
+
+// pyramid layout
+export interface PyramidLayer {
+  title: string;
+  description?: string;
+}
+
+// matrix layout
+export interface MatrixCell {
+  title: string;
+  description?: string;
+}
+
+export interface MatrixData {
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+  topLeft?: MatrixCell;
+  topRight?: MatrixCell;
+  bottomLeft?: MatrixCell;
+  bottomRight?: MatrixCell;
+}
+
+// parallel layout
+export interface ParallelColumn {
+  title: string;
+  icon?: string;
+  description?: string;
   bullets?: string[];
 }
 
@@ -44,6 +83,14 @@ export interface SlideContent {
   // quote layout
   quote?: string;
   source?: string;
+  // flow layout
+  flow?: FlowStep[];
+  // pyramid layout
+  pyramid?: PyramidLayer[];
+  // matrix layout
+  matrix?: MatrixData;
+  // parallel layout
+  parallel?: ParallelColumn[];
   // flags
   isSection?: boolean;
   isSummary?: boolean;
