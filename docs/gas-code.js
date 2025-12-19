@@ -739,7 +739,6 @@ function createStandardSlide(slide, content, index) {
   sideBar.getFill().setSolidFill(COLORS.blue);
   sideBar.getBorder().setTransparent();
 }
-}
 
 // ============================================
 // 2カラムスライド
