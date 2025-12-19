@@ -169,6 +169,27 @@ function calculateBulletFontSize(bullets, availableHeight, maxWidth) {
   return { fontSize, lineHeight };
 }
 
+/**
+ * メッセージテキストの必要な高さを計算
+ * @param {string} text - メッセージテキスト
+ * @param {number} maxWidth - 利用可能な幅
+ * @param {number} fontSize - フォントサイズ
+ * @returns {number} 必要な高さ
+ */
+function calculateMessageHeight(text, maxWidth, fontSize) {
+  if (!text) return 0;
+  
+  const avgCharWidth = 0.7;
+  const lineHeight = 1.6;
+  const charsPerLine = Math.floor(maxWidth / (fontSize * avgCharWidth));
+  const linesNeeded = Math.ceil(text.length / charsPerLine);
+  const minHeight = 34;
+  const calculatedHeight = linesNeeded * fontSize * lineHeight;
+  
+  return Math.max(minHeight, Math.min(calculatedHeight, 80)); // 最大80px
+}
+
+
 // ============================================
 // エントリポイント
 // ============================================
@@ -641,10 +662,12 @@ function createStandardSlide(slide, content, index) {
   let currentY = CONTENT_START_Y;
   
   // コンテンツ量に応じた高さ配分を計算
-  const messageHeight = hasMessage ? 44 : 0;
+  const msgText = content.message || '';
+  const msgFontSizeForCalc = calculateFontSize(msgText, CONTENT_WIDTH, 15, 12);
+  const messageHeight = hasMessage ? calculateMessageHeight(msgText, CONTENT_WIDTH, msgFontSizeForCalc) + 10 : 0;
   const bodyText = content.body || '';
-  const bodyLines = Math.ceil(bodyText.length / 45);
-  const bodyHeight = hasBody ? Math.max(40, Math.min(bodyLines * 20, 80)) : 0;
+  const bodyLines = Math.ceil(bodyText.length / 40);
+  const bodyHeight = hasBody ? Math.max(45, Math.min(bodyLines * 22, 100)) : 0;
   const highlightHeight = hasHighlights ? 40 : 0;
   const fixedHeight = messageHeight + bodyHeight + highlightHeight + 10;
   const bulletAvailableHeight = AVAILABLE_HEIGHT - fixedHeight;
@@ -652,17 +675,18 @@ function createStandardSlide(slide, content, index) {
   // bullet用のフォントサイズを計算
   const bulletStyle = calculateBulletFontSize(validBullets, bulletAvailableHeight, CONTENT_WIDTH - 20);
 
-  // キーメッセージ
+  // キーメッセージ（高さを動的計算）
   if (hasMessage) {
     const msgText = content.message;
     const msgFontSize = calculateFontSize(msgText, CONTENT_WIDTH, 15, 12);
-    const msgBox = slide.insertTextBox(msgText, CONTENT_PADDING, currentY, CONTENT_WIDTH, 34);
+    const msgHeight = calculateMessageHeight(msgText, CONTENT_WIDTH, msgFontSize);
+    const msgBox = slide.insertTextBox(msgText, CONTENT_PADDING, currentY, CONTENT_WIDTH, msgHeight);
     msgBox.getText().getTextStyle()
       .setFontSize(msgFontSize)
       .setBold(true)
       .setForegroundColor(COLORS.navy)
       .setFontFamily(FONTS.title);
-    currentY += 38;
+    currentY += msgHeight + 6;
 
     const msgLine = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, CONTENT_PADDING, currentY - 4, 50, 2);
     msgLine.getFill().setSolidFill(COLORS.blue);
