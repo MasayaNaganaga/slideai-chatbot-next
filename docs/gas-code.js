@@ -1,8 +1,8 @@
 /**
- * SlideAI - Google Apps Script v2.2
+ * SlideAI - Google Apps Script v2.3
  *
  * 複数レイアウト対応・高品質デザイン版
- * v2.2: 下部余白を最適化、コンテンツを画面全体に配置
+ * v2.3: フォントサイズ可変対応、コンテンツ充実化
  *
  * セットアップ手順:
  * 1. script.google.com で新しいプロジェクトを作成
@@ -48,6 +48,126 @@ const FONTS = {
   body: 'Noto Sans JP',
   accent: 'Noto Sans JP',
 };
+
+
+
+// ============================================
+// ヘルパー関数
+// ============================================
+
+/**
+ * テキスト長に応じたフォントサイズを計算
+ * @param {string} text - テキスト内容
+ * @param {number} maxWidth - 利用可能な幅
+ * @param {number} baseFontSize - 基本フォントサイズ
+ * @param {number} minFontSize - 最小フォントサイズ
+ * @returns {number} 計算されたフォントサイズ
+ */
+function calculateFontSize(text, maxWidth, baseFontSize, minFontSize) {
+  if (!text) return baseFontSize;
+  
+  const textLength = text.length;
+  // 1文字あたりの推定幅（日本語は約0.9em、英数字は約0.5em）
+  const avgCharWidth = 0.7;
+  const estimatedWidth = textLength * baseFontSize * avgCharWidth;
+  
+  if (estimatedWidth <= maxWidth) {
+    return baseFontSize;
+  }
+  
+  // 幅に収まるようにフォントサイズを縮小
+  const ratio = maxWidth / estimatedWidth;
+  const newSize = Math.floor(baseFontSize * ratio);
+  
+  return Math.max(newSize, minFontSize);
+}
+
+/**
+ * 複数行テキスト用のフォントサイズを計算
+ * @param {string} text - テキスト内容
+ * @param {number} maxWidth - 利用可能な幅
+ * @param {number} maxHeight - 利用可能な高さ
+ * @param {number} baseFontSize - 基本フォントサイズ
+ * @param {number} minFontSize - 最小フォントサイズ
+ * @returns {number} 計算されたフォントサイズ
+ */
+function calculateMultiLineFontSize(text, maxWidth, maxHeight, baseFontSize, minFontSize) {
+  if (!text) return baseFontSize;
+  
+  const textLength = text.length;
+  const avgCharWidth = 0.7;
+  const lineHeight = 1.5;
+  
+  // 1行あたりの文字数
+  const charsPerLine = Math.floor(maxWidth / (baseFontSize * avgCharWidth));
+  // 必要な行数
+  const linesNeeded = Math.ceil(textLength / charsPerLine);
+  // 必要な高さ
+  const heightNeeded = linesNeeded * baseFontSize * lineHeight;
+  
+  if (heightNeeded <= maxHeight) {
+    return baseFontSize;
+  }
+  
+  // 高さに収まるようにフォントサイズを縮小
+  const ratio = maxHeight / heightNeeded;
+  const newSize = Math.floor(baseFontSize * ratio);
+  
+  return Math.max(newSize, minFontSize);
+}
+
+/**
+ * コンテンツ量に応じたbulletフォントサイズを計算
+ * @param {Array} bullets - bullet配列
+ * @param {number} availableHeight - 利用可能な高さ
+ * @param {number} maxWidth - 利用可能な幅
+ * @returns {Object} {fontSize, lineHeight}
+ */
+function calculateBulletFontSize(bullets, availableHeight, maxWidth) {
+  if (!bullets || bullets.length === 0) {
+    return { fontSize: 12, lineHeight: 28 };
+  }
+  
+  const bulletCount = bullets.length;
+  const maxBulletLength = Math.max(...bullets.map(b => (b || '').length));
+  
+  // 基本設定
+  let fontSize = 12;
+  let lineHeight = 28;
+  
+  // bullet数に応じた調整
+  if (bulletCount <= 3) {
+    fontSize = 14;
+    lineHeight = 36;
+  } else if (bulletCount <= 5) {
+    fontSize = 12;
+    lineHeight = 30;
+  } else if (bulletCount <= 7) {
+    fontSize = 11;
+    lineHeight = 26;
+  } else {
+    fontSize = 10;
+    lineHeight = 24;
+  }
+  
+  // テキスト長に応じた調整
+  const avgCharWidth = 0.7;
+  const estimatedWidth = maxBulletLength * fontSize * avgCharWidth;
+  if (estimatedWidth > maxWidth * 0.9) {
+    // 長いテキストがある場合はフォントを小さく
+    fontSize = Math.max(fontSize - 1, 9);
+  }
+  
+  // 高さチェック
+  const totalHeight = bulletCount * lineHeight;
+  if (totalHeight > availableHeight) {
+    const ratio = availableHeight / totalHeight;
+    fontSize = Math.max(Math.floor(fontSize * ratio), 9);
+    lineHeight = Math.max(Math.floor(lineHeight * ratio), 20);
+  }
+  
+  return { fontSize, lineHeight };
+}
 
 // ============================================
 // エントリポイント
@@ -475,27 +595,30 @@ function createSectionSlide(slide, content, index) {
 function createStandardSlide(slide, content, index) {
   slide.getBackground().setSolidFill(COLORS.white);
 
-  // 定数定義（レイアウト調整用）- 余白を最小化
+  // 定数定義（レイアウト調整用）
   const HEADER_HEIGHT = 55;
   const CONTENT_START_Y = 65;
   const CONTENT_PADDING = 25;
-  const BOTTOM_MARGIN = 10;
+  const BOTTOM_MARGIN = 15;
+  const CONTENT_WIDTH = PAGE_WIDTH - (CONTENT_PADDING * 2);
   const AVAILABLE_HEIGHT = PAGE_HEIGHT - CONTENT_START_Y - BOTTOM_MARGIN;
 
-  // ヘッダーエリア（Dexall風 - クリーンなデザイン）
+  // ヘッダーエリア
   const header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, PAGE_WIDTH, HEADER_HEIGHT);
   header.getFill().setSolidFill(COLORS.navy);
   header.getBorder().setTransparent();
 
-  // タイトル
-  const titleBox = slide.insertTextBox(content.title || '', CONTENT_PADDING, 12, PAGE_WIDTH - 100, 32);
+  // タイトル（文字数に応じてフォントサイズ調整）
+  const titleText = content.title || '';
+  const titleFontSize = calculateFontSize(titleText, PAGE_WIDTH - 100, 18, 14);
+  const titleBox = slide.insertTextBox(titleText, CONTENT_PADDING, 12, PAGE_WIDTH - 100, 32);
   titleBox.getText().getTextStyle()
-    .setFontSize(18)
+    .setFontSize(titleFontSize)
     .setBold(true)
     .setForegroundColor(COLORS.white)
     .setFontFamily(FONTS.title);
 
-  // スライド番号（アクセントカラーの丸背景）
+  // スライド番号
   const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, PAGE_WIDTH - 48, 12, 28, 28);
   numBg.getFill().setSolidFill(COLORS.blue);
   numBg.getBorder().setTransparent();
@@ -508,102 +631,114 @@ function createStandardSlide(slide, content, index) {
   numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
   // コンテンツ領域の計算
-  let hasMessage = Boolean(content.message);
-  let hasBody = Boolean(content.body);
-  let hasHighlights = Array.isArray(content.highlights) && content.highlights.filter(h => h).length > 0;
-  let hasBullets = content.bullets && Array.isArray(content.bullets) && content.bullets.filter(b => b).length > 0;
-
-  // 動的にスペースを配分
-  let currentY = CONTENT_START_Y;
+  const hasMessage = Boolean(content.message);
+  const hasBody = Boolean(content.body);
+  const hasHighlights = Array.isArray(content.highlights) && content.highlights.filter(h => h).length > 0;
+  const hasBullets = content.bullets && Array.isArray(content.bullets) && content.bullets.filter(b => b).length > 0;
   const validBullets = hasBullets ? content.bullets.filter(b => b) : [];
-  const bulletCount = validBullets.length;
 
-  // 各セクションの高さを計算
-  const messageHeight = hasMessage ? 42 : 0;
-  const bodyHeight = hasBody ? 38 : 0;
-  const highlightHeight = hasHighlights ? 38 : 0;
-  const fixedHeight = messageHeight + bodyHeight + highlightHeight;
-  const remainingHeight = AVAILABLE_HEIGHT - fixedHeight;
-  const bulletHeight = bulletCount > 0 ? Math.min(Math.floor(remainingHeight / bulletCount), 38) : 0;
+  // 動的スペース配分
+  let currentY = CONTENT_START_Y;
+  
+  // コンテンツ量に応じた高さ配分を計算
+  const messageHeight = hasMessage ? 44 : 0;
+  const bodyText = content.body || '';
+  const bodyLines = Math.ceil(bodyText.length / 45);
+  const bodyHeight = hasBody ? Math.max(40, Math.min(bodyLines * 20, 80)) : 0;
+  const highlightHeight = hasHighlights ? 40 : 0;
+  const fixedHeight = messageHeight + bodyHeight + highlightHeight + 10;
+  const bulletAvailableHeight = AVAILABLE_HEIGHT - fixedHeight;
+
+  // bullet用のフォントサイズを計算
+  const bulletStyle = calculateBulletFontSize(validBullets, bulletAvailableHeight, CONTENT_WIDTH - 20);
 
   // キーメッセージ
   if (hasMessage) {
-    const msgBox = slide.insertTextBox(content.message, CONTENT_PADDING, currentY, PAGE_WIDTH - (CONTENT_PADDING * 2), 32);
+    const msgText = content.message;
+    const msgFontSize = calculateFontSize(msgText, CONTENT_WIDTH, 15, 12);
+    const msgBox = slide.insertTextBox(msgText, CONTENT_PADDING, currentY, CONTENT_WIDTH, 34);
     msgBox.getText().getTextStyle()
-      .setFontSize(15)
+      .setFontSize(msgFontSize)
       .setBold(true)
       .setForegroundColor(COLORS.navy)
       .setFontFamily(FONTS.title);
-    currentY += 36;
+    currentY += 38;
 
-    // メッセージ下のアクセントライン（Dexallブルー）
     const msgLine = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, CONTENT_PADDING, currentY - 4, 50, 2);
     msgLine.getFill().setSolidFill(COLORS.blue);
     msgLine.getBorder().setTransparent();
   }
 
-  // 本文
+  // 本文（充実した内容を表示）
   if (hasBody) {
-    const bodyBox = slide.insertTextBox(content.body, CONTENT_PADDING, currentY, PAGE_WIDTH - (CONTENT_PADDING * 2), 32);
+    const bodyFontSize = calculateMultiLineFontSize(bodyText, CONTENT_WIDTH, bodyHeight, 12, 10);
+    const bodyBox = slide.insertTextBox(bodyText, CONTENT_PADDING, currentY, CONTENT_WIDTH, bodyHeight);
     bodyBox.getText().getTextStyle()
-      .setFontSize(12)
+      .setFontSize(bodyFontSize)
       .setForegroundColor(COLORS.darkGray)
       .setFontFamily(FONTS.body);
-    currentY += 38;
+    currentY += bodyHeight + 8;
   }
 
-  // ハイライト（数値やキーワード）
+  // ハイライト
   if (hasHighlights) {
     const validHighlights = content.highlights.filter(h => h);
-    const hlCount = Math.min(validHighlights.length, 4); // 最大4つまで
-    const hlWidth = Math.floor((PAGE_WIDTH - (CONTENT_PADDING * 2) - (hlCount - 1) * 8) / hlCount);
+    const hlCount = Math.min(validHighlights.length, 4);
+    const hlWidth = Math.floor((CONTENT_WIDTH - (hlCount - 1) * 8) / hlCount);
 
     validHighlights.slice(0, 4).forEach((hl, i) => {
       const hlText = String(hl);
+      const hlFontSize = calculateFontSize(hlText, hlWidth - 10, 10, 8);
       const hlX = CONTENT_PADDING + (i * (hlWidth + 8));
-      const hlBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, hlX, currentY, hlWidth, 30);
+      const hlBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, hlX, currentY, hlWidth, 32);
       hlBox.getFill().setSolidFill(COLORS.lightGray);
       hlBox.getBorder().setTransparent();
       hlBox.getText().setText(hlText);
       hlBox.getText().getTextStyle()
-        .setFontSize(10)
+        .setFontSize(hlFontSize)
         .setBold(true)
         .setForegroundColor(COLORS.navy)
         .setFontFamily(FONTS.body);
       hlBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     });
-    currentY += 38;
+    currentY += 40;
   }
 
-  // 箇条書き（オーバーフロー防止）
+  // 箇条書き（フォントサイズ可変）
   if (hasBullets) {
-    const maxBullets = Math.min(bulletCount, Math.floor(remainingHeight / 28));
-
-    validBullets.slice(0, maxBullets).forEach((bullet, i) => {
-      if (currentY + bulletHeight > PAGE_HEIGHT - BOTTOM_MARGIN) return;
+    validBullets.forEach((bullet, i) => {
+      if (currentY + bulletStyle.lineHeight > PAGE_HEIGHT - BOTTOM_MARGIN) return;
 
       const bulletText = String(bullet);
-
-      // ドット（Dexallブルー）
-      const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, CONTENT_PADDING + 3, currentY + 6, 6, 6);
+      const dotY = currentY + (bulletStyle.lineHeight - 6) / 2;
+      const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, CONTENT_PADDING + 3, dotY, 6, 6);
       dot.getFill().setSolidFill(COLORS.blue);
       dot.getBorder().setTransparent();
 
-      // テキスト
-      const bulletBox = slide.insertTextBox(bulletText, CONTENT_PADDING + 16, currentY, PAGE_WIDTH - CONTENT_PADDING - 40, Math.min(bulletHeight, 32));
+      const bulletFontSize = Math.min(bulletStyle.fontSize, calculateFontSize(bulletText, CONTENT_WIDTH - 25, bulletStyle.fontSize, 9));
+      const bulletBox = slide.insertTextBox(bulletText, CONTENT_PADDING + 16, currentY, CONTENT_WIDTH - 20, bulletStyle.lineHeight);
       bulletBox.getText().getTextStyle()
-        .setFontSize(12)
+        .setFontSize(bulletFontSize)
         .setForegroundColor(COLORS.darkGray)
         .setFontFamily(FONTS.body);
 
-      currentY += bulletHeight;
+      currentY += bulletStyle.lineHeight;
     });
   }
 
-  // 左サイドのアクセントバー（Dexallブルー）
+  // 下部に余白がある場合、フッターラインを追加
+  if (currentY < PAGE_HEIGHT - 40) {
+    const footerY = PAGE_HEIGHT - 20;
+    const footerLine = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, CONTENT_PADDING, footerY, CONTENT_WIDTH, 1);
+    footerLine.getFill().setSolidFill(COLORS.lightGray);
+    footerLine.getBorder().setTransparent();
+  }
+
+  // 左サイドのアクセントバー
   const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_HEIGHT, 4, PAGE_HEIGHT - HEADER_HEIGHT);
   sideBar.getFill().setSolidFill(COLORS.blue);
   sideBar.getBorder().setTransparent();
+}
 }
 
 // ============================================
