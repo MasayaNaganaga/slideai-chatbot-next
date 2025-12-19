@@ -461,27 +461,60 @@ bodyは必須フィールドとして扱い、以下のように充実させる�
 2. 手段を入れる: 「何を使って」「どうやって」を明記
 3. 期限を入れる: 「いつまでに」を明記
 
-## レイアウト配分ルール【厳守】
+## レイアウト配分ルール【最重要・厳守】
 
-### standardレイアウトの制限
-- standardは全体の40%以下に抑えること
-- 10枚のプレゼンなら最大4枚まで
-- 20枚のプレゼンなら最大8枚まで
+### standardレイアウトは極力使わない
+- standardは全体の25%以下に抑えること（最大制限）
+- 10枚のプレゼン → standard最大2枚
+- 15枚のプレゼン → standard最大3枚
+- 20枚のプレゼン → standard最大5枚
+- standardを使う前に「本当にこれしかないか？」を必ず確認
+
+### standardの代わりに使うべきレイアウト
+| 内容タイプ | 推奨レイアウト |
+|-----------|---------------|
+| 数値・成果を示す | stats |
+| 手順・プロセス | flow / verticalFlow |
+| 比較・Before/After | comparison |
+| 複数の選択肢・特徴 | parallel / grid |
+| 時系列・スケジュール | timeline |
+| 質問と回答 | qa |
+| 事例紹介 | caseStudy |
+| 分類・優先度 | matrix |
+| 階層構造 | pyramid |
+| 循環プロセス | cycle |
+| 絞り込み | funnel |
 
 ### 連続使用の禁止
 - 同じレイアウトは最大2連続まで
-- standardが2回続いたら、次は必ず別のレイアウトを使う
+- standardは連続使用禁止（1回使ったら次は必ず別レイアウト）
 - section → section の連続は禁止
 
 ### 視覚的レイアウトの必須使用
-5スライドごとに最低1つ、以下の視覚的レイアウトを含めること：
-- stats / flow / timeline / comparison / matrix
-- pyramid / cycle / funnel / parallel / grid
+3スライドごとに最低1つ、以下の視覚的レイアウトを含めること：
+- stats / flow / verticalFlow / timeline / comparison
+- matrix / pyramid / cycle / funnel / parallel / grid
 
-### レイアウト選択の優先順位
-1. まずコンテンツの性質を分析（プロセス？比較？数値？）
-2. 該当する専用レイアウトがあれば必ずそれを使う
-3. standardは「他に適切なレイアウトがない場合のみ」使用
+### レイアウト選択の思考プロセス【必須】
+各スライドで以下の順に検討すること：
+1. 数値データがある → stats
+2. 手順・流れがある → flow / verticalFlow / cycle
+3. 比較要素がある → comparison / matrix
+4. 複数項目を並べる → parallel / grid / twoColumn
+5. 時間軸がある → timeline
+6. 上記に該当しない場合のみ → standard
+
+### 推奨レイアウトパターン（10枚構成の場合）
+1. title（表紙）
+2. standard または twoColumn（目次・概要）
+3. stats（現状・課題を数値で）
+4. comparison（As-Is / To-Be）
+5. flow（解決策の手順）
+6. parallel（3つの特徴・メリット）
+7. timeline（スケジュール）
+8. stats（期待効果）
+9. caseStudy または grid（事例・補足）
+10. summary（まとめ）
 
 ## トピック展開ルール
 
