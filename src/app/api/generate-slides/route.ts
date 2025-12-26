@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { SlideData, GenerateSlideResponse } from '@/types/slide';
+import { getImagesForSlides, SlideImage } from '@/lib/unsplash';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const GAS_WEBAPP_URL = process.env.GAS_WEBAPP_URL;
@@ -697,11 +698,18 @@ NG: 内容が重複するスライド
   "title": "プレゼンテーションタイトル",
   "subtitle": "サブタイトル",
   "slides": [
-    { "layout": "section", "title": "...", "message": "..." },
-    { "layout": "standard", "title": "...", "message": "...", "bullets": [...] },
+    { "layout": "section", "title": "...", "message": "...", "imageKeywords": ["キーワード1", "キーワード2"] },
+    { "layout": "standard", "title": "...", "message": "...", "bullets": [...], "imageKeywords": ["キーワード1"] },
     ...
   ]
-}`;
+}
+
+## imageKeywordsについて
+- 各スライドに1-2個の画像検索用キーワードを設定
+- キーワードは日本語でOK（例: "ビジネス", "チーム", "成長", "データ分析"）
+- スライドの内容を視覚的に表現できる単語を選ぶ
+- section, quote, summaryレイアウトでは省略可
+- stats, comparison, flow等の図解系レイアウトでは必須`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -796,7 +804,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 2: GASにスライドデータを送信
+    // Step 2: 各スライドに画像を取得
+    let imageMap: Map<number, SlideImage> = new Map();
+    try {
+      const slidesForImages = slideData.slides.map((slide: { title: string; imageKeywords?: string[] }) => ({
+        title: slide.title,
+        imageKeywords: slide.imageKeywords,
+      }));
+      imageMap = await getImagesForSlides(slidesForImages);
+      console.log(`Fetched ${imageMap.size} images for ${slideData.slides.length} slides`);
+
+      // スライドデータに画像URLを追加
+      slideData.slides = slideData.slides.map((slide: Record<string, unknown>, index: number) => {
+        const image = imageMap.get(index);
+        if (image) {
+          return {
+            ...slide,
+            imageUrl: image.url,
+            imageCredit: image.credit,
+          };
+        }
+        return slide;
+      });
+    } catch (error) {
+      console.error('Failed to fetch images:', error);
+      // 画像取得に失敗してもスライド生成は続行
+    }
+
+    // Step 3: GASにスライドデータを送信
     if (!GAS_WEBAPP_URL) {
       // GAS未設定の場合はスライドデータのみ返す
       return NextResponse.json({

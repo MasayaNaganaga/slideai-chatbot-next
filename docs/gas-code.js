@@ -217,6 +217,113 @@ function addSlideNumber(slide, index) {
   numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 }
 
+/**
+ * スライドに画像を挿入
+ * @param {Slide} slide - スライド
+ * @param {string} imageUrl - 画像URL
+ * @param {Object} options - オプション
+ * @param {number} options.x - X座標
+ * @param {number} options.y - Y座標
+ * @param {number} options.width - 幅
+ * @param {number} options.height - 高さ
+ * @param {string} options.credit - クレジット表示
+ * @param {string} options.position - 配置位置 ('right', 'left', 'background', 'bottom')
+ */
+function insertSlideImage(slide, imageUrl, options = {}) {
+  if (!imageUrl) return null;
+
+  try {
+    const {
+      x = PAGE_WIDTH - 220,
+      y = 70,
+      width = 200,
+      height = 150,
+      credit = null,
+      position = 'right'
+    } = options;
+
+    // 配置位置に応じた座標計算
+    let imgX = x;
+    let imgY = y;
+    let imgWidth = width;
+    let imgHeight = height;
+
+    if (position === 'right') {
+      imgX = PAGE_WIDTH - width - 20;
+      imgY = 70;
+    } else if (position === 'left') {
+      imgX = 20;
+      imgY = 70;
+    } else if (position === 'bottom') {
+      imgX = PAGE_WIDTH / 2 - width / 2;
+      imgY = PAGE_HEIGHT - height - 40;
+    } else if (position === 'background') {
+      // 背景画像として薄く表示
+      imgX = 0;
+      imgY = 0;
+      imgWidth = PAGE_WIDTH;
+      imgHeight = PAGE_HEIGHT;
+    }
+
+    const image = slide.insertImage(imageUrl, imgX, imgY, imgWidth, imgHeight);
+
+    // 背景の場合は透明度を下げて最背面に
+    if (position === 'background') {
+      image.setOpacity(0.15);
+      image.sendToBack();
+    }
+
+    // クレジット表示
+    if (credit && position !== 'background') {
+      const creditBox = slide.insertTextBox(
+        'Photo: ' + credit,
+        imgX,
+        imgY + imgHeight + 2,
+        imgWidth,
+        15
+      );
+      creditBox.getText().getTextStyle()
+        .setFontSize(6)
+        .setForegroundColor(COLORS.gray)
+        .setFontFamily(FONTS.body);
+      creditBox.getText().getParagraphStyle().setParagraphAlignment(
+        position === 'right' ? SlidesApp.ParagraphAlignment.END : SlidesApp.ParagraphAlignment.START
+      );
+    }
+
+    return image;
+  } catch (error) {
+    console.error('Failed to insert image:', error);
+    return null;
+  }
+}
+
+/**
+ * レイアウトタイプに応じた画像配置オプションを取得
+ */
+function getImageOptionsForLayout(layout) {
+  switch (layout) {
+    case 'standard':
+    case 'summary':
+      return { position: 'right', width: 180, height: 135 };
+    case 'twoColumn':
+      return { position: 'background', width: PAGE_WIDTH, height: PAGE_HEIGHT };
+    case 'section':
+      return { position: 'background', width: PAGE_WIDTH, height: PAGE_HEIGHT };
+    case 'stats':
+    case 'comparison':
+    case 'flow':
+    case 'timeline':
+    case 'parallel':
+    case 'grid':
+    case 'matrix':
+      // 図解系レイアウトは画像を入れない（図が主役）
+      return null;
+    default:
+      return { position: 'right', width: 160, height: 120 };
+  }
+}
+
 
 // ============================================
 // エントリポイント
@@ -357,6 +464,17 @@ function createPresentation(slideData) {
         break;
       default:
         createStandardSlide(slide, content, index);
+    }
+
+    // 画像を挿入（imageUrlがある場合）
+    if (content.imageUrl) {
+      const imageOptions = getImageOptionsForLayout(layout);
+      if (imageOptions) {
+        insertSlideImage(slide, content.imageUrl, {
+          ...imageOptions,
+          credit: content.imageCredit || null
+        });
+      }
     }
 
     // スピーカーノートを追加
