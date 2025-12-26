@@ -187,6 +187,11 @@ export async function getImageForSlide(
  * タイトルからキーワードを抽出
  */
 function extractKeywords(title: string): string[] {
+  // titleがundefinedまたは空の場合のフォールバック
+  if (!title || typeof title !== 'string') {
+    return ['business'];
+  }
+
   const keywords: string[] = [];
 
   // KEYWORD_TRANSLATIONSのキーに含まれるものを抽出
