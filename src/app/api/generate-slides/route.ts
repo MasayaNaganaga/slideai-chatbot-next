@@ -818,7 +818,7 @@ export async function POST(request: NextRequest) {
       console.log(`Fetched ${imageMap.size} images for ${slideData.slides.length} slides`);
 
       // スライドデータに画像URLを追加
-      slideData.slides = slideData.slides.map((slide: Record<string, unknown>, index: number) => {
+      slideData.slides = slideData.slides.map((slide, index: number) => {
         const image = imageMap.get(index);
         if (image) {
           return {
