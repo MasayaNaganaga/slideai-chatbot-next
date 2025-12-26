@@ -1152,10 +1152,10 @@ function createComparisonSlide(slide, content, index) {
     return;
   }
 
-  // 定数 - 余白を最小化
+  // 定数
   const HEADER_HEIGHT = 55;
   const CONTENT_PADDING = 18;
-  const BOTTOM_MARGIN = 10;
+  const BOTTOM_MARGIN = 12;
 
   slide.getBackground().setSolidFill(COLORS.white);
 
@@ -1172,10 +1172,23 @@ function createComparisonSlide(slide, content, index) {
     .setForegroundColor(COLORS.white)
     .setFontFamily(FONTS.title);
 
+  // スライド番号
+  addSlideNumber(slide, index);
+
   const colGap = 28;
   const colWidth = Math.floor((PAGE_WIDTH - (CONTENT_PADDING * 2) - colGap) / 2);
   const startY = HEADER_HEIGHT + 10;
   const contentHeight = PAGE_HEIGHT - startY - BOTTOM_MARGIN;
+
+  const beforeItems = (comp.beforeItems && Array.isArray(comp.beforeItems)) ? comp.beforeItems.filter(i => i) : [];
+  const afterItems = (comp.afterItems && Array.isArray(comp.afterItems)) ? comp.afterItems.filter(i => i) : [];
+  const maxItems = Math.max(beforeItems.length, afterItems.length, 1);
+
+  // 項目数に応じてフォントサイズと間隔を調整
+  const titleAreaHeight = 35;
+  const availableHeight = contentHeight - titleAreaHeight - 10;
+  const itemHeight = Math.min(50, Math.max(30, Math.floor(availableHeight / maxItems)));
+  const fontSize = maxItems <= 3 ? 13 : (maxItems <= 5 ? 11 : 10);
 
   // Before/左側（薄いグレー背景）
   const leftBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, CONTENT_PADDING, startY, colWidth, contentHeight);
@@ -1184,31 +1197,27 @@ function createComparisonSlide(slide, content, index) {
 
   const leftTitle = slide.insertTextBox(comp.beforeTitle || 'Before', CONTENT_PADDING + 12, startY + 10, colWidth - 24, 24);
   leftTitle.getText().getTextStyle()
-    .setFontSize(13)
+    .setFontSize(14)
     .setBold(true)
     .setForegroundColor(COLORS.red)
     .setFontFamily(FONTS.title);
 
-  if (comp.beforeItems && Array.isArray(comp.beforeItems)) {
-    const itemHeight = Math.min(28, Math.floor((contentHeight - 45) / comp.beforeItems.length));
-    let y = startY + 40;
-    comp.beforeItems.forEach(item => {
-      if (!item || y + itemHeight > PAGE_HEIGHT - BOTTOM_MARGIN) return;
-      const itemText = '✕ ' + String(item);
-      const itemBox = slide.insertTextBox(itemText, CONTENT_PADDING + 12, y, colWidth - 24, itemHeight);
-      itemBox.getText().getTextStyle()
-        .setFontSize(11)
-        .setForegroundColor(COLORS.darkGray)
-        .setFontFamily(FONTS.body);
-      y += itemHeight;
-    });
-  }
+  // Before項目を均等配置
+  beforeItems.forEach((item, i) => {
+    const y = startY + titleAreaHeight + (i * itemHeight);
+    const itemText = '✕ ' + String(item);
+    const itemBox = slide.insertTextBox(itemText, CONTENT_PADDING + 12, y, colWidth - 24, itemHeight);
+    itemBox.getText().getTextStyle()
+      .setFontSize(fontSize)
+      .setForegroundColor(COLORS.darkGray)
+      .setFontFamily(FONTS.body);
+  });
 
   // 矢印（中央）
-  const arrowX = CONTENT_PADDING + colWidth + (colGap / 2) - 10;
-  const arrow = slide.insertTextBox('→', arrowX, PAGE_HEIGHT / 2 - 12, 20, 28);
+  const arrowX = CONTENT_PADDING + colWidth + (colGap / 2) - 12;
+  const arrow = slide.insertTextBox('→', arrowX, PAGE_HEIGHT / 2 - 15, 24, 30);
   arrow.getText().getTextStyle()
-    .setFontSize(20)
+    .setFontSize(22)
     .setBold(true)
     .setForegroundColor(COLORS.blue)
     .setFontFamily(FONTS.accent);
@@ -1221,25 +1230,21 @@ function createComparisonSlide(slide, content, index) {
 
   const rightTitle = slide.insertTextBox(comp.afterTitle || 'After', rightX + 12, startY + 10, colWidth - 24, 24);
   rightTitle.getText().getTextStyle()
-    .setFontSize(13)
+    .setFontSize(14)
     .setBold(true)
     .setForegroundColor(COLORS.green)
     .setFontFamily(FONTS.title);
 
-  if (comp.afterItems && Array.isArray(comp.afterItems)) {
-    const itemHeight = Math.min(28, Math.floor((contentHeight - 45) / comp.afterItems.length));
-    let y = startY + 40;
-    comp.afterItems.forEach(item => {
-      if (!item || y + itemHeight > PAGE_HEIGHT - BOTTOM_MARGIN) return;
-      const itemText = '✓ ' + String(item);
-      const itemBox = slide.insertTextBox(itemText, rightX + 12, y, colWidth - 24, itemHeight);
-      itemBox.getText().getTextStyle()
-        .setFontSize(11)
-        .setForegroundColor(COLORS.white)
-        .setFontFamily(FONTS.body);
-      y += itemHeight;
-    });
-  }
+  // After項目を均等配置
+  afterItems.forEach((item, i) => {
+    const y = startY + titleAreaHeight + (i * itemHeight);
+    const itemText = '✓ ' + String(item);
+    const itemBox = slide.insertTextBox(itemText, rightX + 12, y, colWidth - 24, itemHeight);
+    itemBox.getText().getTextStyle()
+      .setFontSize(fontSize)
+      .setForegroundColor(COLORS.white)
+      .setFontFamily(FONTS.body);
+  });
 }
 
 // ============================================
