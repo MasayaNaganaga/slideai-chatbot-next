@@ -2974,9 +2974,9 @@ function generateLayoutCatalog() {
         tree: {
           title: '経営層',
           children: [
-            { title: '営業部門', children: ['国内営業', '海外営業'] },
-            { title: '開発部門', children: ['製品開発', '研究開発'] },
-            { title: '管理部門', children: ['人事', '経理'] }
+            { title: '営業部門', children: [{ title: '国内営業' }, { title: '海外営業' }] },
+            { title: '開発部門', children: [{ title: '製品開発' }, { title: '研究開発' }] },
+            { title: '管理部門', children: [{ title: '人事' }, { title: '経理' }] }
           ]
         }
       },
