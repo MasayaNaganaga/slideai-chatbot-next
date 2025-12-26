@@ -2789,10 +2789,8 @@ function generateLayoutCatalog() {
         layout: 'twoColumn',
         title: '③ twoColumn（2カラム）',
         message: '左右2列で情報を対比・整理。各カラムに見出しと箇条書き。',
-        columns: [
-          { title: '左カラム', bullets: ['項目A-1', '項目A-2', '項目A-3'] },
-          { title: '右カラム', bullets: ['項目B-1', '項目B-2', '項目B-3'] }
-        ]
+        leftColumn: { title: '左カラム', bullets: ['項目A-1', '項目A-2', '項目A-3'] },
+        rightColumn: { title: '右カラム', bullets: ['項目B-1', '項目B-2', '項目B-3'] }
       },
       // 4. threeColumn (standardで代用されるが概念として)
       {
@@ -2843,7 +2841,7 @@ function generateLayoutCatalog() {
         layout: 'flow',
         title: '⑨ flow（フロー・横）',
         message: '左から右へのプロセスや手順を表現。',
-        steps: [
+        flow: [
           { title: 'Step 1', description: '企画立案' },
           { title: 'Step 2', description: '設計開発' },
           { title: 'Step 3', description: 'テスト' },
@@ -2855,7 +2853,7 @@ function generateLayoutCatalog() {
         layout: 'verticalFlow',
         title: '⑩ verticalFlow（フロー・縦）',
         message: '上から下へのプロセスを表現。',
-        steps: [
+        flow: [
           { title: '第1段階', description: '要件定義と分析' },
           { title: '第2段階', description: '設計と開発' },
           { title: '第3段階', description: '運用と改善' }
@@ -2890,7 +2888,7 @@ function generateLayoutCatalog() {
         layout: 'parallel',
         title: '⑬ parallel（並列）',
         message: '複数の要素を均等に並べて表示。',
-        items: [
+        parallel: [
           { title: '製品A', description: '高機能モデル' },
           { title: '製品B', description: 'スタンダード' },
           { title: '製品C', description: 'エントリー' }
@@ -2901,7 +2899,7 @@ function generateLayoutCatalog() {
         layout: 'grid',
         title: '⑭ grid（グリッド）',
         message: '複数項目をグリッド状に配置。',
-        items: [
+        grid: [
           { title: '機能1', description: 'データ分析' },
           { title: '機能2', description: 'レポート' },
           { title: '機能3', description: '共有' },
@@ -2948,7 +2946,7 @@ function generateLayoutCatalog() {
         layout: 'table',
         title: '⑱ table（テーブル）',
         message: '表形式でデータを整理して表示。',
-        table: {
+        tableData: {
           headers: ['項目', '内容', '備考'],
           rows: [
             ['機能A', '基本機能', '標準搭載'],
@@ -2974,8 +2972,8 @@ function generateLayoutCatalog() {
         title: '⑳ tree（ツリー）',
         message: '組織図や階層構造を表現。',
         tree: {
-          root: '経営層',
-          branches: [
+          title: '経営層',
+          children: [
             { title: '営業部門', children: ['国内営業', '海外営業'] },
             { title: '開発部門', children: ['製品開発', '研究開発'] },
             { title: '管理部門', children: ['人事', '経理'] }
@@ -2987,7 +2985,7 @@ function generateLayoutCatalog() {
         layout: 'qa',
         title: '㉑ qa（Q&A）',
         message: '質問と回答形式で情報を整理。FAQ向け。',
-        qa: [
+        qaItems: [
           { question: 'Q1. 導入期間は？', answer: '約3ヶ月で本番稼働可能です。' },
           { question: 'Q2. サポート体制は？', answer: '24時間365日対応しています。' },
           { question: 'Q3. 費用は？', answer: '月額10万円からご利用いただけます。' }
