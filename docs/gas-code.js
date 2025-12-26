@@ -726,8 +726,30 @@ function createSectionSlide(slide, content, index) {
   decorCircle.getBorder().setTransparent();
   decorCircle.sendToBack();
 
+  const titleText = content.title || '';
+  const titleLength = titleText.length;
+
+  // タイトル文字数に応じてフォントサイズと配置を調整
+  let titleFontSize = 32;
+  let titleY = PAGE_HEIGHT / 2 - 20;
+  let titleHeight = 55;
+  let messageY = PAGE_HEIGHT / 2 + 50;
+
+  if (titleLength > 20) {
+    titleFontSize = 26;
+    titleY = PAGE_HEIGHT / 2 - 35;
+    titleHeight = 70;
+    messageY = PAGE_HEIGHT / 2 + 50;
+  }
+  if (titleLength > 30) {
+    titleFontSize = 22;
+    titleY = PAGE_HEIGHT / 2 - 45;
+    titleHeight = 85;
+    messageY = PAGE_HEIGHT / 2 + 55;
+  }
+
   // セクション番号（Dexallブルー）
-  const numBox = slide.insertTextBox(String(index + 1).padStart(2, '0'), 50, PAGE_HEIGHT / 2 - 70, 90, 45);
+  const numBox = slide.insertTextBox(String(index + 1).padStart(2, '0'), 50, titleY - 55, 90, 45);
   numBox.getText().getTextStyle()
     .setFontSize(42)
     .setBold(true)
@@ -735,18 +757,18 @@ function createSectionSlide(slide, content, index) {
     .setFontFamily(FONTS.accent);
 
   // タイトル
-  const titleBox = slide.insertTextBox(content.title || '', 50, PAGE_HEIGHT / 2 - 15, PAGE_WIDTH - 180, 50);
+  const titleBox = slide.insertTextBox(titleText, 50, titleY, PAGE_WIDTH - 180, titleHeight);
   titleBox.getText().getTextStyle()
-    .setFontSize(32)
+    .setFontSize(titleFontSize)
     .setBold(true)
     .setForegroundColor(COLORS.white)
     .setFontFamily(FONTS.title);
 
   // メッセージ（あれば）
   if (content.message) {
-    const msgBox = slide.insertTextBox(content.message, 50, PAGE_HEIGHT / 2 + 45, PAGE_WIDTH - 180, 35);
+    const msgBox = slide.insertTextBox(content.message, 50, messageY, PAGE_WIDTH - 180, 50);
     msgBox.getText().getTextStyle()
-      .setFontSize(14)
+      .setFontSize(13)
       .setForegroundColor(COLORS.lightBlue)
       .setFontFamily(FONTS.body);
   }
