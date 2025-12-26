@@ -2387,27 +2387,41 @@ function createVennSlide(slide, content, index) {
 
   // ベン図 - サイズ拡大
   const centerY = (PAGE_HEIGHT + HEADER_HEIGHT) / 2;
-  const circleSize = 260;
-  const overlap = 80;
+  const circleSize = 280;  // より大きく
+  const overlap = 100;     // 交差部分を広く
 
-  // 左の円
+  // 左の円（透明度70%）
   const leftCircle = slide.insertShape(SlidesApp.ShapeType.ELLIPSE,
     PAGE_WIDTH / 2 - circleSize + overlap / 2, centerY - circleSize / 2, circleSize, circleSize);
-  leftCircle.getFill().setSolidFill('#337ab7');
-  leftCircle.getBorder().setTransparent();
+  leftCircle.getFill().setSolidFill('#337ab7', 0.7);  // 透明度設定
+  leftCircle.getBorder().setWeight(2);
+  leftCircle.getBorder().setSolidFill('#2a6395');
   leftCircle.setContentAlignment(SlidesApp.ContentAlignment.TOP);
 
-  // 右の円
+  // 右の円（透明度70%）
   const rightCircle = slide.insertShape(SlidesApp.ShapeType.ELLIPSE,
     PAGE_WIDTH / 2 - overlap / 2, centerY - circleSize / 2, circleSize, circleSize);
-  rightCircle.getFill().setSolidFill('#28a745');
-  rightCircle.getBorder().setTransparent();
+  rightCircle.getFill().setSolidFill('#28a745', 0.7);  // 透明度設定
+  rightCircle.getBorder().setWeight(2);
+  rightCircle.getBorder().setSolidFill('#1e7b34');
 
-  // 左のラベル
+  // 交差部分のハイライト（楕円で表現）
+  const intersectionWidth = overlap;
+  const intersectionHeight = circleSize * 0.7;
+  const intersectionX = PAGE_WIDTH / 2 - intersectionWidth / 2;
+  const intersectionY = centerY - intersectionHeight / 2;
+  const intersection = slide.insertShape(SlidesApp.ShapeType.ELLIPSE,
+    intersectionX, intersectionY, intersectionWidth, intersectionHeight);
+  intersection.getFill().setSolidFill('#ffc107', 0.85);  // 黄色でハイライト
+  intersection.getBorder().setWeight(2);
+  intersection.getBorder().setSolidFill('#d39e00');
+
+  // 左のラベル（フォントサイズ拡大）
   if (venn.left && venn.left.title) {
-    const leftLabel = slide.insertTextBox(venn.left.title, PAGE_WIDTH / 2 - circleSize + overlap / 2, centerY - 50, circleSize - overlap, 30);
+    const leftLabelX = PAGE_WIDTH / 2 - circleSize + overlap / 2 - 10;
+    const leftLabel = slide.insertTextBox(venn.left.title, leftLabelX, centerY - 60, circleSize - overlap, 40);
     leftLabel.getText().getTextStyle()
-      .setFontSize(12)
+      .setFontSize(16)  // 12→16に拡大
       .setBold(true)
       .setForegroundColor(COLORS.white)
       .setFontFamily(FONTS.title);
@@ -2415,20 +2429,21 @@ function createVennSlide(slide, content, index) {
 
     if (venn.left.items && venn.left.items.length > 0) {
       const leftItems = slide.insertTextBox(venn.left.items.slice(0, 3).join('\n'),
-        PAGE_WIDTH / 2 - circleSize + overlap / 2 + 10, centerY - 15, circleSize - overlap - 20, 80);
+        leftLabelX + 5, centerY - 15, circleSize - overlap - 10, 100);
       leftItems.getText().getTextStyle()
-        .setFontSize(9)
+        .setFontSize(12)  // 9→12に拡大
         .setForegroundColor(COLORS.white)
         .setFontFamily(FONTS.body);
       leftItems.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     }
   }
 
-  // 右のラベル
+  // 右のラベル（フォントサイズ拡大）
   if (venn.right && venn.right.title) {
-    const rightLabel = slide.insertTextBox(venn.right.title, PAGE_WIDTH / 2 + overlap / 2, centerY - 50, circleSize - overlap, 30);
+    const rightLabelX = PAGE_WIDTH / 2 + overlap / 2 + 10;
+    const rightLabel = slide.insertTextBox(venn.right.title, rightLabelX, centerY - 60, circleSize - overlap, 40);
     rightLabel.getText().getTextStyle()
-      .setFontSize(12)
+      .setFontSize(16)  // 12→16に拡大
       .setBold(true)
       .setForegroundColor(COLORS.white)
       .setFontFamily(FONTS.title);
@@ -2436,31 +2451,31 @@ function createVennSlide(slide, content, index) {
 
     if (venn.right.items && venn.right.items.length > 0) {
       const rightItems = slide.insertTextBox(venn.right.items.slice(0, 3).join('\n'),
-        PAGE_WIDTH / 2 + overlap / 2 + 10, centerY - 15, circleSize - overlap - 20, 80);
+        rightLabelX + 5, centerY - 15, circleSize - overlap - 10, 100);
       rightItems.getText().getTextStyle()
-        .setFontSize(9)
+        .setFontSize(12)  // 9→12に拡大
         .setForegroundColor(COLORS.white)
         .setFontFamily(FONTS.body);
       rightItems.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     }
   }
 
-  // 中央（共通部分）
+  // 中央（共通部分）- フォントサイズ拡大、テキストボックス拡大
   if (venn.center && venn.center.title) {
-    const centerLabel = slide.insertTextBox(venn.center.title, PAGE_WIDTH / 2 - 40, centerY - 40, 80, 25);
+    const centerLabel = slide.insertTextBox(venn.center.title, PAGE_WIDTH / 2 - 50, centerY - 50, 100, 35);
     centerLabel.getText().getTextStyle()
-      .setFontSize(10)
+      .setFontSize(14)  // 10→14に拡大
       .setBold(true)
-      .setForegroundColor(COLORS.navy)
+      .setForegroundColor('#7b5800')  // 黄色背景に合う暗い色
       .setFontFamily(FONTS.title);
     centerLabel.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
     if (venn.center.items && venn.center.items.length > 0) {
-      const centerItems = slide.insertTextBox(venn.center.items.slice(0, 2).join('\n'),
-        PAGE_WIDTH / 2 - 40, centerY - 10, 80, 50);
+      const centerItems = slide.insertTextBox(venn.center.items.slice(0, 3).join('\n'),
+        PAGE_WIDTH / 2 - 50, centerY - 10, 100, 80);
       centerItems.getText().getTextStyle()
-        .setFontSize(8)
-        .setForegroundColor(COLORS.navy)
+        .setFontSize(11)  // 8→11に拡大
+        .setForegroundColor('#7b5800')
         .setFontFamily(FONTS.body);
       centerItems.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     }
