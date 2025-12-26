@@ -234,62 +234,53 @@ function insertSlideImage(slide, imageUrl, options = {}) {
 
   try {
     const {
-      x = PAGE_WIDTH - 220,
-      y = 70,
-      width = 200,
-      height = 150,
+      width = 140,
+      height = 100,
       credit = null,
-      position = 'right'
+      position = 'bottomRight',
+      opacity = null
     } = options;
 
-    // 配置位置に応じた座標計算
-    let imgX = x;
-    let imgY = y;
-    let imgWidth = width;
-    let imgHeight = height;
+    let imgX, imgY, imgWidth, imgHeight;
 
-    if (position === 'right') {
-      imgX = PAGE_WIDTH - width - 20;
-      imgY = 70;
-    } else if (position === 'left') {
-      imgX = 20;
-      imgY = 70;
-    } else if (position === 'bottom') {
-      imgX = PAGE_WIDTH / 2 - width / 2;
-      imgY = PAGE_HEIGHT - height - 40;
-    } else if (position === 'background') {
-      // 背景画像として薄く表示
-      imgX = 0;
-      imgY = 0;
-      imgWidth = PAGE_WIDTH;
-      imgHeight = PAGE_HEIGHT;
+    switch (position) {
+      case 'bottomRight':
+        // 右下に小さく配置（テキストに干渉しにくい）
+        imgWidth = width;
+        imgHeight = height;
+        imgX = PAGE_WIDTH - imgWidth - 15;
+        imgY = PAGE_HEIGHT - imgHeight - 20;
+        break;
+      case 'right':
+        imgWidth = width;
+        imgHeight = height;
+        imgX = PAGE_WIDTH - imgWidth - 20;
+        imgY = 70;
+        break;
+      case 'background':
+        // 背景画像として全体に表示
+        imgX = 0;
+        imgY = 0;
+        imgWidth = PAGE_WIDTH;
+        imgHeight = PAGE_HEIGHT;
+        break;
+      default:
+        imgWidth = width;
+        imgHeight = height;
+        imgX = PAGE_WIDTH - imgWidth - 15;
+        imgY = PAGE_HEIGHT - imgHeight - 20;
     }
 
     const image = slide.insertImage(imageUrl, imgX, imgY, imgWidth, imgHeight);
 
     // 背景の場合は透明度を下げて最背面に
     if (position === 'background') {
-      image.setOpacity(0.15);
+      image.setOpacity(opacity || 0.12);
       image.sendToBack();
     }
 
-    // クレジット表示
-    if (credit && position !== 'background') {
-      const creditBox = slide.insertTextBox(
-        'Photo: ' + credit,
-        imgX,
-        imgY + imgHeight + 2,
-        imgWidth,
-        15
-      );
-      creditBox.getText().getTextStyle()
-        .setFontSize(6)
-        .setForegroundColor(COLORS.gray)
-        .setFontFamily(FONTS.body);
-      creditBox.getText().getParagraphStyle().setParagraphAlignment(
-        position === 'right' ? SlidesApp.ParagraphAlignment.END : SlidesApp.ParagraphAlignment.START
-      );
-    }
+    // クレジット表示は背景以外で、かつ小さいサイズの場合のみ
+    // （レイアウトを崩さないため省略することも多い）
 
     return image;
   } catch (error) {
@@ -303,24 +294,35 @@ function insertSlideImage(slide, imageUrl, options = {}) {
  */
 function getImageOptionsForLayout(layout) {
   switch (layout) {
+    case 'section':
+      // セクションは背景として薄く表示（最も効果的）
+      return { position: 'background', opacity: 0.12 };
     case 'standard':
     case 'summary':
-      return { position: 'right', width: 180, height: 135 };
-    case 'twoColumn':
-      return { position: 'background', width: PAGE_WIDTH, height: PAGE_HEIGHT };
-    case 'section':
-      return { position: 'background', width: PAGE_WIDTH, height: PAGE_HEIGHT };
+    case 'caseStudy':
+      // テキスト系レイアウトは右下に小さく配置
+      return { position: 'bottomRight', width: 140, height: 100 };
+    // 図解系レイアウトは画像を入れない
     case 'stats':
     case 'comparison':
     case 'flow':
+    case 'verticalFlow':
     case 'timeline':
     case 'parallel':
     case 'grid':
     case 'matrix':
-      // 図解系レイアウトは画像を入れない（図が主役）
+    case 'pyramid':
+    case 'cycle':
+    case 'funnel':
+    case 'table':
+    case 'venn':
+    case 'tree':
+    case 'qa':
+    case 'twoColumn':
+    case 'quote':
       return null;
     default:
-      return { position: 'right', width: 160, height: 120 };
+      return null; // デフォルトは画像なし
   }
 }
 

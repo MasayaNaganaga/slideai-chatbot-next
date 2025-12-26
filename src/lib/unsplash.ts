@@ -204,33 +204,69 @@ function extractKeywords(title: string): string[] {
   return keywords;
 }
 
+// 画像を挿入すべきレイアウト
+const IMAGE_LAYOUTS = ['section', 'standard', 'summary', 'caseStudy'];
+
+// 画像を挿入しないレイアウト（図解優先）
+const NO_IMAGE_LAYOUTS = ['stats', 'comparison', 'flow', 'verticalFlow', 'timeline',
+  'parallel', 'grid', 'matrix', 'pyramid', 'cycle', 'funnel', 'table', 'venn', 'tree', 'qa'];
+
 /**
- * 複数スライド用の画像を一括取得
+ * 複数スライド用の画像を一括取得（最小限・重複なし）
  */
 export async function getImagesForSlides(
-  slides: Array<{ title: string; imageKeywords?: string[] }>
+  slides: Array<{ title: string; layout?: string; imageKeywords?: string[] }>,
+  options: { maxImages?: number } = {}
 ): Promise<Map<number, SlideImage>> {
+  const { maxImages = 3 } = options; // デフォルト最大3枚
   const imageMap = new Map<number, SlideImage>();
+  const usedImageUrls = new Set<string>(); // 重複防止用
+  let imageCount = 0;
 
-  // 並列で画像を取得（ただしレート制限を考慮して少しずつ）
-  const batchSize = 5;
-  for (let i = 0; i < slides.length; i += batchSize) {
-    const batch = slides.slice(i, i + batchSize);
-    const promises = batch.map(async (slide, batchIndex) => {
-      const index = i + batchIndex;
-      const image = await getImageForSlide(slide.title, slide.imageKeywords);
-      if (image) {
-        imageMap.set(index, image);
+  // 画像を入れるべきスライドをフィルタリング
+  const targetSlides: Array<{ index: number; slide: typeof slides[0] }> = [];
+
+  slides.forEach((slide, index) => {
+    const layout = slide.layout || 'standard';
+
+    // sectionレイアウトを優先
+    if (layout === 'section') {
+      targetSlides.unshift({ index, slide }); // 先頭に追加
+    } else if (IMAGE_LAYOUTS.includes(layout) && !NO_IMAGE_LAYOUTS.includes(layout)) {
+      targetSlides.push({ index, slide });
+    }
+  });
+
+  // 最大枚数まで画像を取得
+  for (const { index, slide } of targetSlides) {
+    if (imageCount >= maxImages) break;
+
+    try {
+      // 複数の画像候補を取得して重複を避ける
+      const images = await searchImages(
+        slide.imageKeywords?.[0] || slide.title,
+        { perPage: 5 }
+      );
+
+      // 未使用の画像を探す
+      const unusedImage = images.find(img => !usedImageUrls.has(img.url));
+
+      if (unusedImage) {
+        imageMap.set(index, unusedImage);
+        usedImageUrls.add(unusedImage.url);
+        imageCount++;
+        console.log(`Image ${imageCount}/${maxImages} for slide ${index}: ${slide.title}`);
       }
-    });
+    } catch (error) {
+      console.error(`Failed to get image for slide ${index}:`, error);
+    }
 
-    await Promise.all(promises);
-
-    // レート制限対策: バッチ間で少し待機
-    if (i + batchSize < slides.length) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+    // レート制限対策
+    if (imageCount < maxImages) {
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
   }
 
+  console.log(`Total images fetched: ${imageCount} for ${slides.length} slides`);
   return imageMap;
 }

@@ -353,7 +353,7 @@ export default function HomePage() {
     message?: string,
     welcomeImages?: { base64: string; mimeType: string }[]
   ) => {
-    const messageToSend = message || inputValue;
+    const messageToSend = message ?? inputValue ?? '';
 
     // WelcomeScreenからの画像またはChatInputからの画像を使用
     const messageImages: MessageImage[] = welcomeImages

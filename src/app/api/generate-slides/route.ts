@@ -804,14 +804,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 2: 各スライドに画像を取得
+    // Step 2: 各スライドに画像を取得（最大3枚、重複なし）
     let imageMap: Map<number, SlideImage> = new Map();
     try {
-      const slidesForImages = slideData.slides.map((slide: { title: string; imageKeywords?: string[] }) => ({
+      const slidesForImages = slideData.slides.map((slide: { title: string; layout?: string; imageKeywords?: string[] }) => ({
         title: slide.title,
+        layout: slide.layout,
         imageKeywords: slide.imageKeywords,
       }));
-      imageMap = await getImagesForSlides(slidesForImages);
+      // スライド枚数に応じて画像数を調整（10枚以下は2枚、それ以上は3枚まで）
+      const maxImages = slideData.slides.length <= 10 ? 2 : 3;
+      imageMap = await getImagesForSlides(slidesForImages, { maxImages });
       console.log(`Fetched ${imageMap.size} images for ${slideData.slides.length} slides`);
 
       // スライドデータに画像URLを追加
