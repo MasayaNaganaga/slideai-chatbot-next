@@ -349,15 +349,21 @@ export default function HomePage() {
     }
   };
 
-  const handleSendMessage = async (message?: string) => {
+  const handleSendMessage = async (
+    message?: string,
+    welcomeImages?: { base64: string; mimeType: string }[]
+  ) => {
     const messageToSend = message || inputValue;
-    if ((!messageToSend.trim() && uploadedImages.length === 0) || !user) return;
 
-    // 画像情報を保存
-    const messageImages: MessageImage[] = uploadedImages.map((img) => ({
-      base64: img.base64,
-      mimeType: img.file.type,
-    }));
+    // WelcomeScreenからの画像またはChatInputからの画像を使用
+    const messageImages: MessageImage[] = welcomeImages
+      ? welcomeImages
+      : uploadedImages.map((img) => ({
+          base64: img.base64,
+          mimeType: img.file.type,
+        }));
+
+    if ((!messageToSend.trim() && messageImages.length === 0) || !user) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
