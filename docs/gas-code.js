@@ -2395,7 +2395,7 @@ function createVennSlide(slide, content, index) {
     PAGE_WIDTH / 2 - circleSize + overlap / 2, centerY - circleSize / 2, circleSize, circleSize);
   leftCircle.getFill().setSolidFill('#337ab7', 0.7);  // 透明度設定
   leftCircle.getBorder().setWeight(2);
-  leftCircle.getBorder().setSolidFill('#2a6395');
+  leftCircle.getBorder().getLineFill().setSolidFill('#2a6395');
   leftCircle.setContentAlignment(SlidesApp.ContentAlignment.TOP);
 
   // 右の円（透明度70%）
@@ -2403,7 +2403,7 @@ function createVennSlide(slide, content, index) {
     PAGE_WIDTH / 2 - overlap / 2, centerY - circleSize / 2, circleSize, circleSize);
   rightCircle.getFill().setSolidFill('#28a745', 0.7);  // 透明度設定
   rightCircle.getBorder().setWeight(2);
-  rightCircle.getBorder().setSolidFill('#1e7b34');
+  rightCircle.getBorder().getLineFill().setSolidFill('#1e7b34');
 
   // 交差部分のハイライト（楕円で表現）
   const intersectionWidth = overlap;
@@ -2414,7 +2414,7 @@ function createVennSlide(slide, content, index) {
     intersectionX, intersectionY, intersectionWidth, intersectionHeight);
   intersection.getFill().setSolidFill('#ffc107', 0.85);  // 黄色でハイライト
   intersection.getBorder().setWeight(2);
-  intersection.getBorder().setSolidFill('#d39e00');
+  intersection.getBorder().getLineFill().setSolidFill('#d39e00');
 
   // 左のラベル（フォントサイズ拡大）
   if (venn.left && venn.left.title) {
