@@ -2828,10 +2828,8 @@ function generateLayoutCatalog() {
       {
         layout: 'quote',
         title: '⑦ quote（引用）',
-        quote: {
-          text: '優れたプレゼンテーションは、複雑なアイデアをシンプルに伝える力を持っている。',
-          author: '著名なビジネスリーダー'
-        }
+        quote: '優れたプレゼンテーションは、複雑なアイデアをシンプルに伝える力を持っている。',
+        source: '著名なビジネスリーダー'
       },
       // 8. summary
       {
