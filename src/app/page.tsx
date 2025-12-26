@@ -10,6 +10,7 @@ import {
   Sidebar,
   WelcomeScreen,
 } from '@/components/chat';
+import type { UploadedImage } from '@/components/chat/ChatInput';
 import {
   getConversations,
   createConversation,
@@ -24,11 +25,17 @@ import { Button } from '@/components/ui/button';
 import type { User } from '@supabase/supabase-js';
 import type { GenerateSlideResponse } from '@/types/slide';
 
+interface MessageImage {
+  base64: string;
+  mimeType: string;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  images?: MessageImage[];
 }
 
 interface ChatMessage {
@@ -62,6 +69,7 @@ export default function HomePage() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isGeneratingSlide, setIsGeneratingSlide] = useState(false);
   const [slideResult, setSlideResult] = useState<GenerateSlideResponse | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<Window | null>(null);
   const popupCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -343,17 +351,25 @@ export default function HomePage() {
 
   const handleSendMessage = async (message?: string) => {
     const messageToSend = message || inputValue;
-    if (!messageToSend.trim() || !user) return;
+    if ((!messageToSend.trim() && uploadedImages.length === 0) || !user) return;
+
+    // 画像情報を保存
+    const messageImages: MessageImage[] = uploadedImages.map((img) => ({
+      base64: img.base64,
+      mimeType: img.file.type,
+    }));
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: messageToSend,
       timestamp: new Date(),
+      images: messageImages.length > 0 ? messageImages : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
+    setUploadedImages([]); // 画像をクリア
     setIsTyping(true);
     setStreamingContent('');
 
@@ -386,7 +402,11 @@ export default function HomePage() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: messageToSend, history }),
+        body: JSON.stringify({
+          message: messageToSend,
+          history,
+          images: messageImages.length > 0 ? messageImages : undefined,
+        }),
       });
 
       if (!response.ok) {
@@ -580,6 +600,8 @@ export default function HomePage() {
                 onChange={setInputValue}
                 onSend={handleSendMessage}
                 disabled={isTyping}
+                images={uploadedImages}
+                onImagesChange={setUploadedImages}
               />
             </>
           )}

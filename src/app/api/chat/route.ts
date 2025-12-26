@@ -8,6 +8,11 @@ export interface ChatMessage {
   parts: { text: string }[];
 }
 
+interface ImageData {
+  base64: string;
+  mimeType: string;
+}
+
 const SYSTEM_PROMPT = `あなたは「SlideAI」というプレゼン作成アシスタントです。
 スライド生成に必要な情報を【2段階】で収集します。
 
@@ -70,7 +75,7 @@ const SYSTEM_PROMPT = `あなたは「SlideAI」というプレゼン作成ア�
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, history } = await request.json();
+    const { message, history, images } = await request.json();
 
     if (!OPENROUTER_API_KEY) {
       return NextResponse.json(
@@ -86,8 +91,39 @@ export async function POST(request: NextRequest) {
         role: msg.role === 'model' ? 'assistant' : 'user',
         content: msg.parts[0].text,
       })),
-      { role: 'user', content: message },
     ];
+
+    // Handle multimodal message (text + images)
+    if (images && images.length > 0) {
+      const contentParts: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
+
+      // Add images first
+      (images as ImageData[]).forEach((img) => {
+        contentParts.push({
+          type: 'image_url',
+          image_url: {
+            url: `data:${img.mimeType};base64,${img.base64}`,
+          },
+        });
+      });
+
+      // Add text message
+      const textContent = message.trim()
+        ? `この画像を参考にして、プレゼン作成に活用してください。\n\nユーザーのメッセージ: ${message}`
+        : 'この画像を参考にして、プレゼン作成に活用してください。画像の内容を分析し、スライドに反映できそうな情報を教えてください。';
+
+      contentParts.push({
+        type: 'text',
+        text: textContent,
+      });
+
+      messages.push({
+        role: 'user',
+        content: contentParts,
+      });
+    } else {
+      messages.push({ role: 'user', content: message });
+    }
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',

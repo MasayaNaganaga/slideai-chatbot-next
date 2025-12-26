@@ -7,11 +7,17 @@ import { Bot, Copy, Check, Share2, MoreHorizontal, ThumbsUp, ThumbsDown, Refresh
 import { cn } from '@/lib/utils';
 import type { User } from '@supabase/supabase-js';
 
+interface MessageImage {
+  base64: string;
+  mimeType: string;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  images?: MessageImage[];
 }
 
 interface MessageCardProps {
@@ -122,6 +128,24 @@ export default function MessageCard({ message, user }: MessageCardProps) {
               </Button>
             </div>
           </div>
+
+          {/* 画像表示 */}
+          {message.images && message.images.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {message.images.map((img, index) => (
+                <img
+                  key={index}
+                  src={`data:${img.mimeType};base64,${img.base64}`}
+                  alt={`添付画像 ${index + 1}`}
+                  className="max-w-[200px] max-h-[200px] object-contain rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => {
+                    // 画像をモーダルで大きく表示することもできる
+                    window.open(`data:${img.mimeType};base64,${img.base64}`, '_blank');
+                  }}
+                />
+              ))}
+            </div>
+          )}
 
           <div className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
             {message.content}

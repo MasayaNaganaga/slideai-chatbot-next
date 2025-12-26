@@ -6,11 +6,17 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Bot } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
+interface MessageImage {
+  base64: string;
+  mimeType: string;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  images?: MessageImage[];
 }
 
 interface ChatHistoryProps {
