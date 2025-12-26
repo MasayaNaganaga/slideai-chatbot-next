@@ -2761,3 +2761,256 @@ function testCreatePresentation() {
   const result = createPresentation(testData);
   console.log('Created:', result.url);
 }
+
+// ============================================
+// レイアウトカタログ生成
+// ============================================
+
+function generateLayoutCatalog() {
+  const catalogData = {
+    title: 'SlideAI レイアウトカタログ',
+    subtitle: '全22種類のスライドレイアウト一覧',
+    slides: [
+      // 1. section
+      {
+        layout: 'section',
+        title: '① section（セクション）',
+        message: 'プレゼンの区切りや章タイトルに使用。大きなタイトルと補足メッセージで構成。'
+      },
+      // 2. standard
+      {
+        layout: 'standard',
+        title: '② standard（標準）',
+        message: '最も基本的なレイアウト。タイトル、メッセージ、箇条書きで構成。',
+        bullets: ['箇条書き項目1：説明テキスト', '箇条書き項目2：説明テキスト', '箇条書き項目3：説明テキスト']
+      },
+      // 3. twoColumn
+      {
+        layout: 'twoColumn',
+        title: '③ twoColumn（2カラム）',
+        message: '左右2列で情報を対比・整理。各カラムに見出しと箇条書き。',
+        columns: [
+          { title: '左カラム', bullets: ['項目A-1', '項目A-2', '項目A-3'] },
+          { title: '右カラム', bullets: ['項目B-1', '項目B-2', '項目B-3'] }
+        ]
+      },
+      // 4. threeColumn (standardで代用されるが概念として)
+      {
+        layout: 'standard',
+        title: '④ threeColumn（3カラム）',
+        message: '3列構成で複数の要素を並列表示。比較や選択肢の提示に最適。',
+        bullets: ['カラム1：オプションA', 'カラム2：オプションB', 'カラム3：オプションC']
+      },
+      // 5. stats
+      {
+        layout: 'stats',
+        title: '⑤ stats（統計・数値）',
+        message: '大きな数字で成果やKPIを視覚的にアピール。',
+        stats: [
+          { value: '150%', label: '売上成長率' },
+          { value: '50万', label: '新規顧客数' },
+          { value: '98%', label: '顧客満足度' }
+        ]
+      },
+      // 6. comparison
+      {
+        layout: 'comparison',
+        title: '⑥ comparison（比較）',
+        message: 'Before/After形式で変化を明確に表現。',
+        comparison: {
+          beforeTitle: 'Before（導入前）',
+          beforeItems: ['手作業での処理', '時間がかかる', 'ミスが発生'],
+          afterTitle: 'After（導入後）',
+          afterItems: ['自動化処理', '時間短縮', '精度向上']
+        }
+      },
+      // 7. quote
+      {
+        layout: 'quote',
+        title: '⑦ quote（引用）',
+        quote: {
+          text: '優れたプレゼンテーションは、複雑なアイデアをシンプルに伝える力を持っている。',
+          author: '著名なビジネスリーダー'
+        }
+      },
+      // 8. summary
+      {
+        layout: 'summary',
+        title: '⑧ summary（まとめ）',
+        message: 'プレゼンの締めくくりに使用。重要ポイントを整理。',
+        bullets: ['重要ポイント1：本日の結論', '重要ポイント2：次のアクション', '重要ポイント3：期待される成果']
+      },
+      // 9. flow
+      {
+        layout: 'flow',
+        title: '⑨ flow（フロー・横）',
+        message: '左から右へのプロセスや手順を表現。',
+        steps: [
+          { title: 'Step 1', description: '企画立案' },
+          { title: 'Step 2', description: '設計開発' },
+          { title: 'Step 3', description: 'テスト' },
+          { title: 'Step 4', description: 'リリース' }
+        ]
+      },
+      // 10. verticalFlow
+      {
+        layout: 'verticalFlow',
+        title: '⑩ verticalFlow（フロー・縦）',
+        message: '上から下へのプロセスを表現。',
+        steps: [
+          { title: '第1段階', description: '要件定義と分析' },
+          { title: '第2段階', description: '設計と開発' },
+          { title: '第3段階', description: '運用と改善' }
+        ]
+      },
+      // 11. pyramid
+      {
+        layout: 'pyramid',
+        title: '⑪ pyramid（ピラミッド）',
+        message: '階層構造や優先順位を視覚化。',
+        pyramid: [
+          { title: 'ビジョン', description: '最上位の目標' },
+          { title: '戦略', description: '達成への道筋' },
+          { title: '戦術', description: '具体的な施策' },
+          { title: '実行', description: '日々のアクション' }
+        ]
+      },
+      // 12. matrix
+      {
+        layout: 'matrix',
+        title: '⑫ matrix（マトリクス）',
+        message: '2x2の4象限で分類・分析。',
+        matrix: {
+          topLeft: { title: '高優先・低コスト', description: '即座に実行' },
+          topRight: { title: '高優先・高コスト', description: '計画的に実行' },
+          bottomLeft: { title: '低優先・低コスト', description: '余裕があれば' },
+          bottomRight: { title: '低優先・高コスト', description: '見送り検討' }
+        }
+      },
+      // 13. parallel
+      {
+        layout: 'parallel',
+        title: '⑬ parallel（並列）',
+        message: '複数の要素を均等に並べて表示。',
+        items: [
+          { title: '製品A', description: '高機能モデル' },
+          { title: '製品B', description: 'スタンダード' },
+          { title: '製品C', description: 'エントリー' }
+        ]
+      },
+      // 14. grid
+      {
+        layout: 'grid',
+        title: '⑭ grid（グリッド）',
+        message: '複数項目をグリッド状に配置。',
+        items: [
+          { title: '機能1', description: 'データ分析' },
+          { title: '機能2', description: 'レポート' },
+          { title: '機能3', description: '共有' },
+          { title: '機能4', description: '連携' }
+        ]
+      },
+      // 15. timeline
+      {
+        layout: 'timeline',
+        title: '⑮ timeline（タイムライン）',
+        timeline: [
+          { date: '2024年Q1', title: '企画', description: '要件定義' },
+          { date: '2024年Q2', title: '開発', description: '実装作業' },
+          { date: '2024年Q3', title: 'テスト', description: '品質検証' },
+          { date: '2024年Q4', title: 'リリース', description: '本番公開' }
+        ]
+      },
+      // 16. cycle
+      {
+        layout: 'cycle',
+        title: '⑯ cycle（サイクル）',
+        message: '繰り返しプロセスを円形で表現。',
+        cycle: [
+          { title: 'Plan', description: '計画' },
+          { title: 'Do', description: '実行' },
+          { title: 'Check', description: '評価' },
+          { title: 'Act', description: '改善' }
+        ]
+      },
+      // 17. funnel
+      {
+        layout: 'funnel',
+        title: '⑰ funnel（ファネル）',
+        message: '段階的な絞り込みを表現。営業・マーケティングに最適。',
+        funnel: [
+          { title: '認知', value: '10,000人' },
+          { title: '興味', value: '3,000人' },
+          { title: '検討', value: '500人' },
+          { title: '購入', value: '100人' }
+        ]
+      },
+      // 18. table
+      {
+        layout: 'table',
+        title: '⑱ table（テーブル）',
+        message: '表形式でデータを整理して表示。',
+        table: {
+          headers: ['項目', '内容', '備考'],
+          rows: [
+            ['機能A', '基本機能', '標準搭載'],
+            ['機能B', '拡張機能', 'オプション'],
+            ['機能C', '高度機能', 'プレミアム']
+          ]
+        }
+      },
+      // 19. venn
+      {
+        layout: 'venn',
+        title: '⑲ venn（ベン図）',
+        message: '2つの要素の関係性と共通点を表現。',
+        venn: {
+          left: { title: '技術力', items: ['開発スキル', 'システム設計'] },
+          right: { title: 'ビジネス力', items: ['市場理解', '顧客対応'] },
+          center: { title: '共通', items: ['問題解決力'] }
+        }
+      },
+      // 20. tree
+      {
+        layout: 'tree',
+        title: '⑳ tree（ツリー）',
+        message: '組織図や階層構造を表現。',
+        tree: {
+          root: '経営層',
+          branches: [
+            { title: '営業部門', children: ['国内営業', '海外営業'] },
+            { title: '開発部門', children: ['製品開発', '研究開発'] },
+            { title: '管理部門', children: ['人事', '経理'] }
+          ]
+        }
+      },
+      // 21. qa
+      {
+        layout: 'qa',
+        title: '㉑ qa（Q&A）',
+        message: '質問と回答形式で情報を整理。FAQ向け。',
+        qa: [
+          { question: 'Q1. 導入期間は？', answer: '約3ヶ月で本番稼働可能です。' },
+          { question: 'Q2. サポート体制は？', answer: '24時間365日対応しています。' },
+          { question: 'Q3. 費用は？', answer: '月額10万円からご利用いただけます。' }
+        ]
+      },
+      // 22. caseStudy
+      {
+        layout: 'caseStudy',
+        title: '㉒ caseStudy（事例紹介）',
+        caseStudy: {
+          company: '株式会社サンプル',
+          industry: '製造業',
+          challenge: '業務効率化の遅れによる競争力低下',
+          solution: 'デジタルツール導入と業務プロセス改革',
+          result: '生産性30%向上、コスト20%削減を達成'
+        }
+      }
+    ]
+  };
+
+  const result = createPresentation(catalogData);
+  console.log('カタログ生成完了:', result.url);
+  return result;
+}
