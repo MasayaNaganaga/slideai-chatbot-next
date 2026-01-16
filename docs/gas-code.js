@@ -197,24 +197,36 @@ function calculateMessageHeight(text, maxWidth, fontSize) {
  */
 function addSlideNumber(slide, index) {
   const numText = String(index + 1);
-  const isDoubleDigit = numText.length >= 2;
+  const digitCount = numText.length;
 
-  // 2桁の場合は横長に
-  const width = isDoubleDigit ? 36 : 28;
+  // 桁数に応じて幅を調整（1桁:28, 2桁:42, 3桁:52）
+  let width, fontSize;
+  if (digitCount === 1) {
+    width = 28;
+    fontSize = 11;
+  } else if (digitCount === 2) {
+    width = 42;
+    fontSize = 11;
+  } else {
+    width = 52;
+    fontSize = 10;
+  }
   const height = 28;
   const x = PAGE_WIDTH - width - 12;
-  const fontSize = isDoubleDigit ? 10 : 11;
 
-  const numBg = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x, 12, width, height);
+  // 角丸長方形を使用（横幅に余裕を持たせる）
+  const numBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, x, 12, width, height);
   numBg.getFill().setSolidFill(COLORS.blue);
   numBg.getBorder().setTransparent();
-  numBg.getText().setText(numText);
-  numBg.getText().getTextStyle()
+
+  // テキストボックスを別途作成（中央配置を確実に）
+  const textBox = slide.insertTextBox(numText, x, 12, width, height);
+  textBox.getText().getTextStyle()
     .setFontSize(fontSize)
     .setBold(true)
     .setForegroundColor(COLORS.white)
     .setFontFamily(FONTS.accent);
-  numBg.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  textBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 }
 
 /**
@@ -764,11 +776,28 @@ function createSectionSlide(slide, content, index) {
     .setForegroundColor(COLORS.white)
     .setFontFamily(FONTS.title);
 
-  // メッセージ（あれば）
+  // メッセージ（あれば）- 文字数に応じて位置とサイズを調整
   if (content.message) {
-    const msgBox = slide.insertTextBox(content.message, 50, messageY, PAGE_WIDTH - 180, 50);
+    const msgText = content.message;
+    const msgLength = msgText.length;
+
+    // メッセージが長い場合は位置を下げ、高さを確保
+    let adjustedMsgY = messageY;
+    let msgHeight = 50;
+    let msgFontSize = 13;
+
+    if (msgLength > 30) {
+      adjustedMsgY = messageY + 15;
+      msgHeight = 70;
+      msgFontSize = 12;
+    } else if (msgLength > 17) {
+      adjustedMsgY = messageY + 8;
+      msgHeight = 60;
+    }
+
+    const msgBox = slide.insertTextBox(msgText, 50, adjustedMsgY, PAGE_WIDTH - 180, msgHeight);
     msgBox.getText().getTextStyle()
-      .setFontSize(13)
+      .setFontSize(msgFontSize)
       .setForegroundColor(COLORS.lightBlue)
       .setFontFamily(FONTS.body);
   }
@@ -988,30 +1017,42 @@ function createTwoColumnSlide(slide, content, index) {
 
 function createColumnContent(slide, column, x, y, width, maxHeight) {
   if (!column) return;
-  let currentY = y;
   const bottomLimit = y + maxHeight;
 
   // カラムタイトル
+  let titleHeight = 0;
   if (column.title) {
-    const colTitle = slide.insertTextBox(column.title, x, currentY, width, 28);
+    const colTitle = slide.insertTextBox(column.title, x, y, width, 28);
     colTitle.getText().getTextStyle()
       .setFontSize(14)
       .setBold(true)
       .setForegroundColor(COLORS.navy)
       .setFontFamily(FONTS.title);
-    currentY += 34;
+    titleHeight = 34;
   }
 
-  // 箇条書き - スライド全体を使うように調整
+  // 箇条書き - 縦方向全体を均等に使用
   if (column.bullets && Array.isArray(column.bullets)) {
     const validBullets = column.bullets.filter(b => b);
-    const availableHeight = bottomLimit - currentY - 10;
-    // 最低32px、最大でavailableHeightを均等分配
-    const bulletHeight = Math.max(32, Math.floor(availableHeight / Math.max(validBullets.length, 1)));
+    const bulletCount = validBullets.length;
+    if (bulletCount === 0) return;
+
+    const contentStartY = y + titleHeight;
+    const availableHeight = bottomLimit - contentStartY - 10;
+
+    // 箇条書き全体の高さを計算（項目数に応じて調整）
+    const minBulletHeight = 36;
+    const maxBulletHeight = 55;
+    const bulletHeight = Math.min(maxBulletHeight, Math.max(minBulletHeight, Math.floor(availableHeight / bulletCount)));
+    const totalBulletsHeight = bulletHeight * bulletCount;
+
+    // 余白を上下に分散して中央寄せ
+    const verticalOffset = Math.max(0, (availableHeight - totalBulletsHeight) / 2);
+    let currentY = contentStartY + verticalOffset;
 
     validBullets.forEach((bullet, idx) => {
       if (currentY + 28 > bottomLimit) return;
-      const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 4, currentY + 8, 6, 6);
+      const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x + 4, currentY + 10, 6, 6);
       dot.getFill().setSolidFill(COLORS.blue);
       dot.getBorder().setTransparent();
 
@@ -1186,9 +1227,16 @@ function createComparisonSlide(slide, content, index) {
 
   // 項目数に応じてフォントサイズと間隔を調整
   const titleAreaHeight = 35;
-  const availableHeight = contentHeight - titleAreaHeight - 10;
-  const itemHeight = Math.min(50, Math.max(30, Math.floor(availableHeight / maxItems)));
+  const availableHeight = contentHeight - titleAreaHeight - 20;
+  const minItemHeight = 35;
+  const maxItemHeight = 55;
+  const itemHeight = Math.min(maxItemHeight, Math.max(minItemHeight, Math.floor(availableHeight / maxItems)));
   const fontSize = maxItems <= 3 ? 13 : (maxItems <= 5 ? 11 : 10);
+
+  // 縦方向中央配置のためのオフセット計算
+  const totalItemsHeight = itemHeight * maxItems;
+  const verticalOffset = Math.max(0, (availableHeight - totalItemsHeight) / 2);
+  const itemsStartY = startY + titleAreaHeight + verticalOffset;
 
   // Before/左側（薄いグレー背景）
   const leftBg = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, CONTENT_PADDING, startY, colWidth, contentHeight);
@@ -1202,9 +1250,9 @@ function createComparisonSlide(slide, content, index) {
     .setForegroundColor(COLORS.red)
     .setFontFamily(FONTS.title);
 
-  // Before項目を均等配置
+  // Before項目を均等配置（縦中央寄せ）
   beforeItems.forEach((item, i) => {
-    const y = startY + titleAreaHeight + (i * itemHeight);
+    const y = itemsStartY + (i * itemHeight);
     const itemText = '✕ ' + String(item);
     const itemBox = slide.insertTextBox(itemText, CONTENT_PADDING + 12, y, colWidth - 24, itemHeight);
     itemBox.getText().getTextStyle()
@@ -1235,9 +1283,9 @@ function createComparisonSlide(slide, content, index) {
     .setForegroundColor(COLORS.green)
     .setFontFamily(FONTS.title);
 
-  // After項目を均等配置
+  // After項目を均等配置（縦中央寄せ）
   afterItems.forEach((item, i) => {
-    const y = startY + titleAreaHeight + (i * itemHeight);
+    const y = itemsStartY + (i * itemHeight);
     const itemText = '✓ ' + String(item);
     const itemBox = slide.insertTextBox(itemText, rightX + 12, y, colWidth - 24, itemHeight);
     itemBox.getText().getTextStyle()
@@ -1843,16 +1891,16 @@ function createTimelineSlide(slide, content, index) {
   // スライド番号
   addSlideNumber(slide, index);
 
-  // タイムライン - 垂直方向に中央配置
+  // タイムライン - 垂直方向を中央寄りに配置
   const itemCount = Math.min(timelineItems.length, 6);
   const availableHeight = PAGE_HEIGHT - HEADER_HEIGHT - BOTTOM_MARGIN;
-  const startY = HEADER_HEIGHT + availableHeight * 0.2; // 日付の位置（上から20%）
+  const startY = HEADER_HEIGHT + availableHeight * 0.35; // 35%位置に変更（中央寄り）
   const lineY = startY + 45; // タイムライン線
   const itemWidth = (PAGE_WIDTH - CONTENT_PADDING * 2) / itemCount;
 
   // 横線
-  const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, CONTENT_PADDING, lineY, PAGE_WIDTH - CONTENT_PADDING * 2, 3);
-  line.getFill().setSolidFill(COLORS.lightGray);
+  const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, CONTENT_PADDING, lineY, PAGE_WIDTH - CONTENT_PADDING * 2, 4);
+  line.getFill().setSolidFill(COLORS.blue);
   line.getBorder().setTransparent();
 
   const itemColors = ['#337ab7', '#4a8bc2', '#6ba3d6', '#8dbde8', '#afd4f2', '#c5e1f7'];
@@ -1860,39 +1908,40 @@ function createTimelineSlide(slide, content, index) {
   timelineItems.slice(0, 6).forEach((item, i) => {
     const x = CONTENT_PADDING + (i * itemWidth) + itemWidth / 2;
 
-    // ドット
-    const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x - 10, lineY - 8, 20, 20);
+    // ドット（サイズ拡大）
+    const dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x - 12, lineY - 10, 24, 24);
     dot.getFill().setSolidFill(itemColors[i % itemColors.length]);
-    dot.getBorder().setTransparent();
+    dot.getBorder().setWeight(2);
+    dot.getBorder().getLineFill().setSolidFill(COLORS.white);
 
-    // 日付
+    // 日付（上に配置、フォントサイズ拡大）
     if (item.date) {
-      const dateBox = slide.insertTextBox(item.date, x - itemWidth / 2 + 5, startY, itemWidth - 10, 30);
+      const dateBox = slide.insertTextBox(item.date, x - itemWidth / 2 + 5, startY, itemWidth - 10, 35);
       dateBox.getText().getTextStyle()
-        .setFontSize(11)
+        .setFontSize(13)
         .setBold(true)
         .setForegroundColor(itemColors[i % itemColors.length])
         .setFontFamily(FONTS.accent);
       dateBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
     }
 
-    // タイトル
-    const titleY = lineY + 25;
-    const itemTitle = slide.insertTextBox(item.title, x - itemWidth / 2 + 5, titleY, itemWidth - 10, 35);
+    // タイトル（フォントサイズ拡大）
+    const titleY = lineY + 30;
+    const itemTitle = slide.insertTextBox(item.title, x - itemWidth / 2 + 5, titleY, itemWidth - 10, 40);
     itemTitle.getText().getTextStyle()
-      .setFontSize(12)
+      .setFontSize(13)
       .setBold(true)
       .setForegroundColor(COLORS.navy)
       .setFontFamily(FONTS.title);
     itemTitle.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
 
-    // 説明
+    // 説明（フォントサイズ拡大、スペースを有効活用）
     if (item.description) {
-      const descY = titleY + 40;
-      const descHeight = PAGE_HEIGHT - descY - BOTTOM_MARGIN - 10;
+      const descY = titleY + 45;
+      const descHeight = PAGE_HEIGHT - descY - BOTTOM_MARGIN - 5;
       const descBox = slide.insertTextBox(item.description, x - itemWidth / 2 + 5, descY, itemWidth - 10, descHeight);
       descBox.getText().getTextStyle()
-        .setFontSize(10)
+        .setFontSize(11)
         .setForegroundColor(COLORS.darkGray)
         .setFontFamily(FONTS.body);
       descBox.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
@@ -2116,6 +2165,10 @@ function createTableSlide(slide, content, index) {
   const colWidth = (PAGE_WIDTH - CONTENT_PADDING * 2) / colCount;
   const rowHeight = tableHeight / rowCount;
 
+  // 列数に応じてフォントサイズを調整（列が多いほど小さく）
+  const headerFontSize = colCount <= 3 ? 15 : (colCount <= 4 ? 14 : 13);
+  const dataFontSize = colCount <= 3 ? 14 : (colCount <= 4 ? 13 : 12);
+
   // ヘッダー行
   tableData.headers.slice(0, colCount).forEach((headerText, i) => {
     const x = CONTENT_PADDING + (i * colWidth);
@@ -2125,7 +2178,7 @@ function createTableSlide(slide, content, index) {
 
     const cellText = slide.insertTextBox(headerText, x + 4, startY + 4, colWidth - 10, rowHeight - 10);
     cellText.getText().getTextStyle()
-      .setFontSize(12)
+      .setFontSize(headerFontSize)
       .setBold(true)
       .setForegroundColor(COLORS.white)
       .setFontFamily(FONTS.title);
@@ -2145,7 +2198,7 @@ function createTableSlide(slide, content, index) {
 
       const cellText = slide.insertTextBox(cellValue || '', x + 4, y + 4, colWidth - 10, rowHeight - 10);
       cellText.getText().getTextStyle()
-        .setFontSize(12)
+        .setFontSize(dataFontSize)
         .setForegroundColor(COLORS.darkGray)
         .setFontFamily(FONTS.body);
       cellText.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
@@ -2385,10 +2438,10 @@ function createVennSlide(slide, content, index) {
   // スライド番号
   addSlideNumber(slide, index);
 
-  // ベン図 - サイズ拡大
+  // ベン図 - サイズ大幅拡大
   const centerY = (PAGE_HEIGHT + HEADER_HEIGHT) / 2;
-  const circleSize = 280;  // より大きく
-  const overlap = 100;     // 交差部分を広く
+  const circleSize = 340;  // 280→340に拡大
+  const overlap = 120;     // 交差部分も拡大
 
   // 左の円（透明度70%）
   const leftCircle = slide.insertShape(SlidesApp.ShapeType.ELLIPSE,
