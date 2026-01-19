@@ -46,12 +46,16 @@ export default function ChatInput({
   };
 
   const handleCompositionEnd = () => {
-    isComposingRef.current = false;
+    // Macでは compositionend 後に keydown が発火するため遅延を入れる
+    setTimeout(() => {
+      isComposingRef.current = false;
+    }, 10);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // IME変換中は送信しない
-    if (isComposingRef.current || e.nativeEvent.isComposing) return;
+    // keyCode 229 はIME処理中を示す（Mac対策）
+    if (isComposingRef.current || e.nativeEvent.isComposing || e.keyCode === 229) return;
 
     if (e.key === 'Enter' && !e.shiftKey && !disabled) {
       e.preventDefault();
