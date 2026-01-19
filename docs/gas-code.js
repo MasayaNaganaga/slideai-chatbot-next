@@ -407,7 +407,7 @@ function createPresentation(slideData) {
   // 目次スライドを追加（スライドが5枚以上の場合）
   if (slideData.slides.length >= 5) {
     const tocSlide = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
-    createTableOfContents(tocSlide, slideData.slides);
+    createTableOfContents(presentation, tocSlide, slideData.slides);
   }
 
   // コンテンツスライドを追加
@@ -669,58 +669,106 @@ function createTitleSlide(slide, title, subtitle) {
 // 目次スライド
 // ============================================
 
-function createTableOfContents(slide, slides) {
+function createTableOfContents(presentation, slide, slides) {
   // 定数 - 余白を最適化
   const CONTENT_PADDING = 50;
   const BOTTOM_MARGIN = 15;
-
-  slide.getBackground().setSolidFill(COLORS.white);
-
-  // タイトル
-  const titleBox = slide.insertTextBox('Contents', CONTENT_PADDING, 30, 180, 35);
-  titleBox.getText().getTextStyle()
-    .setFontSize(26)
-    .setBold(true)
-    .setForegroundColor(COLORS.navy)
-    .setFontFamily(FONTS.title);
-
-  // アクセントライン（Dexallブルー）
-  const line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, CONTENT_PADDING, 68, 50, 3);
-  line.getFill().setSolidFill(COLORS.blue);
-  line.getBorder().setTransparent();
-
-  // 目次項目（オーバーフロー防止）
   const startY = 85;
-  const availableHeight = PAGE_HEIGHT - startY - BOTTOM_MARGIN;
-  const itemHeight = Math.floor(availableHeight / Math.min(slides.length, 10));
-  const maxItems = Math.min(slides.length, 10);
+  const maxItemsPerColumn = 10;
+  const maxItemsPerPage = 20;
 
-  slides.slice(0, maxItems).forEach((content, i) => {
-    const y = startY + (i * itemHeight);
-    if (y + 26 > PAGE_HEIGHT - BOTTOM_MARGIN) return;
-
-    const itemTitle = content.title || `スライド ${i + 1}`;
-
-    // 番号（Dexallブルー）
-    const numBox = slide.insertTextBox(String(i + 1).padStart(2, '0'), CONTENT_PADDING, y, 35, 26);
-    numBox.getText().getTextStyle()
-      .setFontSize(13)
-      .setBold(true)
-      .setForegroundColor(COLORS.blue)
-      .setFontFamily(FONTS.accent);
+  // 目次ページの共通スタイルを設定する関数
+  function setupTocPage(targetSlide, pageNumber, totalPages) {
+    targetSlide.getBackground().setSolidFill(COLORS.white);
 
     // タイトル
-    const itemBox = slide.insertTextBox(itemTitle, CONTENT_PADDING + 45, y, PAGE_WIDTH - CONTENT_PADDING - 100, 26);
-    itemBox.getText().getTextStyle()
-      .setFontSize(13)
-      .setForegroundColor(COLORS.darkGray)
-      .setFontFamily(FONTS.body);
-  });
+    const titleText = totalPages > 1 ? `Contents (${pageNumber}/${totalPages})` : 'Contents';
+    const titleBox = targetSlide.insertTextBox(titleText, CONTENT_PADDING, 30, 250, 35);
+    titleBox.getText().getTextStyle()
+      .setFontSize(26)
+      .setBold(true)
+      .setForegroundColor(COLORS.navy)
+      .setFontFamily(FONTS.title);
 
-  // 左のアクセントバー（Dexallネイビー）
-  const sideBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, 6, PAGE_HEIGHT);
-  sideBar.getFill().setSolidFill(COLORS.navy);
-  sideBar.getBorder().setTransparent();
+    // アクセントライン（Dexallブルー）
+    const line = targetSlide.insertShape(SlidesApp.ShapeType.RECTANGLE, CONTENT_PADDING, 68, 50, 3);
+    line.getFill().setSolidFill(COLORS.blue);
+    line.getBorder().setTransparent();
+
+    // 左のアクセントバー（Dexallネイビー）
+    const sideBar = targetSlide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, 6, PAGE_HEIGHT);
+    sideBar.getFill().setSolidFill(COLORS.navy);
+    sideBar.getBorder().setTransparent();
+  }
+
+  // 目次項目を描画する関数
+  function renderTocItems(targetSlide, items, startIndex, isRightColumn) {
+    const columnX = isRightColumn ? PAGE_WIDTH / 2 + 20 : CONTENT_PADDING;
+    const columnWidth = PAGE_WIDTH / 2 - CONTENT_PADDING - 40;
+    const availableHeight = PAGE_HEIGHT - startY - BOTTOM_MARGIN;
+    const itemHeight = Math.floor(availableHeight / maxItemsPerColumn);
+
+    items.forEach((content, i) => {
+      const y = startY + (i * itemHeight);
+      if (y + 26 > PAGE_HEIGHT - BOTTOM_MARGIN) return;
+
+      const itemNumber = startIndex + i + 1;
+      const itemTitle = content.title || `スライド ${itemNumber}`;
+
+      // 番号（Dexallブルー）
+      const numBox = targetSlide.insertTextBox(String(itemNumber).padStart(2, '0'), columnX, y, 35, 26);
+      numBox.getText().getTextStyle()
+        .setFontSize(13)
+        .setBold(true)
+        .setForegroundColor(COLORS.blue)
+        .setFontFamily(FONTS.accent);
+
+      // タイトル
+      const itemBox = targetSlide.insertTextBox(itemTitle, columnX + 45, y, columnWidth, 26);
+      itemBox.getText().getTextStyle()
+        .setFontSize(13)
+        .setForegroundColor(COLORS.darkGray)
+        .setFontFamily(FONTS.body);
+    });
+  }
+
+  const totalItems = slides.length;
+  const totalPages = Math.ceil(totalItems / maxItemsPerPage);
+  const useTwoColumns = totalItems > maxItemsPerColumn;
+
+  // 1ページ目を設定
+  setupTocPage(slide, 1, totalPages);
+
+  if (useTwoColumns) {
+    // 2列レイアウト
+    const leftItems = slides.slice(0, maxItemsPerColumn);
+    const rightItems = slides.slice(maxItemsPerColumn, maxItemsPerPage);
+    renderTocItems(slide, leftItems, 0, false);
+    if (rightItems.length > 0) {
+      renderTocItems(slide, rightItems, maxItemsPerColumn, true);
+    }
+  } else {
+    // 1列レイアウト
+    renderTocItems(slide, slides, 0, false);
+  }
+
+  // 21個以上の場合は2ページ目以降を作成
+  if (totalItems > maxItemsPerPage) {
+    for (let page = 2; page <= totalPages; page++) {
+      const pageStartIndex = (page - 1) * maxItemsPerPage;
+      const pageSlides = slides.slice(pageStartIndex, pageStartIndex + maxItemsPerPage);
+
+      const newTocSlide = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+      setupTocPage(newTocSlide, page, totalPages);
+
+      const leftItems = pageSlides.slice(0, maxItemsPerColumn);
+      const rightItems = pageSlides.slice(maxItemsPerColumn, maxItemsPerPage);
+      renderTocItems(newTocSlide, leftItems, pageStartIndex, false);
+      if (rightItems.length > 0) {
+        renderTocItems(newTocSlide, rightItems, pageStartIndex + maxItemsPerColumn, true);
+      }
+    }
+  }
 }
 
 // ============================================
