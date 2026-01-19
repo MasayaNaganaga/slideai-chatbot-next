@@ -151,8 +151,8 @@ export default function ChatInput({
           onBlur={() => setIsFocused(false)}
           onKeyDown={handleKeyDown}
           placeholder={images.length > 0
-            ? "画像について説明を追加... (Cmd + Enter で送信)"
-            : "メッセージを入力してください... (Cmd + Enter で送信)"
+            ? "画像について説明を追加..."
+            : "メッセージを入力してください..."
           }
           className="min-h-[56px] max-h-[200px] resize-none border-0 focus-visible:ring-0 bg-muted/50"
           rows={1}
@@ -204,7 +204,7 @@ export default function ChatInput({
 
       <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
         <span className="text-muted-foreground/60">
-          ⌘ + Enter で送信 ・ ドラッグ&ドロップで画像を追加
+          ⌘/Ctrl + Enter で送信 ・ ドラッグ&ドロップで画像を追加
         </span>
         <span>Powered by Gemini</span>
       </div>
