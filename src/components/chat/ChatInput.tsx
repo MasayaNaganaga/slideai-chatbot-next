@@ -32,7 +32,6 @@ export default function ChatInput({
   const [isDragOver, setIsDragOver] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isComposingRef = useRef(false);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -41,23 +40,9 @@ export default function ChatInput({
     }
   }, [value]);
 
-  const handleCompositionStart = () => {
-    isComposingRef.current = true;
-  };
-
-  const handleCompositionEnd = () => {
-    // Macでは compositionend 後に keydown が発火するため遅延を入れる
-    setTimeout(() => {
-      isComposingRef.current = false;
-    }, 10);
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // IME変換中は送信しない
-    // keyCode 229 はIME処理中を示す（Mac対策）
-    if (isComposingRef.current || e.nativeEvent.isComposing || e.keyCode === 229) return;
-
-    if (e.key === 'Enter' && !e.shiftKey && !disabled) {
+    // Cmd+Enter (Mac) または Ctrl+Enter (Windows) で送信
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !disabled) {
       e.preventDefault();
       onSend();
     }
@@ -165,11 +150,9 @@ export default function ChatInput({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           onKeyDown={handleKeyDown}
-          onCompositionStart={handleCompositionStart}
-          onCompositionEnd={handleCompositionEnd}
           placeholder={images.length > 0
-            ? "画像について説明を追加... (Shift + Enter で改行)"
-            : "メッセージを入力してください... (Shift + Enter で改行)"
+            ? "画像について説明を追加... (Cmd + Enter で送信)"
+            : "メッセージを入力してください... (Cmd + Enter で送信)"
           }
           className="min-h-[56px] max-h-[200px] resize-none border-0 focus-visible:ring-0 bg-muted/50"
           rows={1}
