@@ -32,6 +32,7 @@ export default function ChatInput({
   const [isDragOver, setIsDragOver] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isComposingRef = useRef(false);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -40,9 +41,17 @@ export default function ChatInput({
     }
   }, [value]);
 
+  const handleCompositionStart = () => {
+    isComposingRef.current = true;
+  };
+
+  const handleCompositionEnd = () => {
+    isComposingRef.current = false;
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // IME変換中は送信しない
-    if (e.nativeEvent.isComposing) return;
+    if (isComposingRef.current || e.nativeEvent.isComposing) return;
 
     if (e.key === 'Enter' && !e.shiftKey && !disabled) {
       e.preventDefault();
@@ -152,6 +161,8 @@ export default function ChatInput({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           onKeyDown={handleKeyDown}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
           placeholder={images.length > 0
             ? "画像について説明を追加... (Shift + Enter で改行)"
             : "メッセージを入力してください... (Shift + Enter で改行)"
