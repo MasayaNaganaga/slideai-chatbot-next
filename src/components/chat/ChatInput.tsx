@@ -204,7 +204,7 @@ export default function ChatInput({
 
       <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
         <span className="text-muted-foreground/60">
-          ⌘/Ctrl + Enter で送信 ・ ドラッグ&ドロップで画像を追加
+          ⌘/Ctrl + Enter で送信
         </span>
         <span>Powered by Gemini</span>
       </div>

@@ -36,7 +36,8 @@ export default function WelcomeScreen({ user, onSendMessage }: WelcomeScreenProp
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Cmd+Enter (Mac) または Ctrl+Enter (Windows) で送信
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleSubmit();
     }
@@ -188,8 +189,8 @@ export default function WelcomeScreen({ user, onSendMessage }: WelcomeScreenProp
         </div>
 
         <div className="text-center">
-          <p className="text-muted-foreground text-xs">
-            AIがプレゼンテーションの構成をサポートします
+          <p className="text-muted-foreground/60 text-xs">
+            ⌘/Ctrl + Enter で送信
           </p>
           <p className="text-muted-foreground text-xs mt-2">
             ©株式会社Dexall
