@@ -41,6 +41,9 @@ export default function ChatInput({
   }, [value]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // IME変換中は送信しない
+    if (e.nativeEvent.isComposing) return;
+
     if (e.key === 'Enter' && !e.shiftKey && !disabled) {
       e.preventDefault();
       onSend();
